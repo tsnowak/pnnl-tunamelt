@@ -1,3 +1,6 @@
+
+import numpy as np
+import cv2
 from pathlib import Path
 
 def get_file_path(  f: str,
@@ -25,3 +28,30 @@ def get_file_path(  f: str,
                 out.append(f_path)
         
     return out
+
+def cap_to_nparray(cap, format='BGR'):
+    # catch error
+    if (cap.isOpened() == False):
+        print ("Error opening video")
+
+    frameCount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+    frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
+    frameHeight = int(cap.get(cv2.CAP_PROP_FRAME_HEIGHT))
+    buf = np.empty((frameCount, frameHeight, frameWidth, 3), np.dtype('uint8'))
+ 
+    fc = 0
+    ret = True
+    while (fc < frameCount and ret):
+        ret, frame = cap.read()
+        if format == "BGR":
+            buf[fc] = frame
+        else:
+            try:
+                color_cmd = eval(f"cv2.COLOR_BGR2{format}")
+            except Exception as e:
+                print("Color format does not exist")
+                raise e
+            buf[fc] = cv2.cvtColor(frame, color_cmd)
+        fc+=1
+    cap.release()
+    return buf

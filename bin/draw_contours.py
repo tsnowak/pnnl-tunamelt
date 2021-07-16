@@ -14,6 +14,7 @@ if __name__ == "__main__":
         '/Users/nowa201/Data/fish_detector',
         '/data/nowa201/Projects/fish_detection/mp4'
     ]
+
     name = "2010-09-08_081500_HF_S021"
     vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
 
