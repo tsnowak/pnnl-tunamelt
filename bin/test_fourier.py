@@ -15,7 +15,8 @@ if __name__ == "__main__":
     ]
 
     #name = "2010-09-08_081500_HF_S021"
-    name = "2010-09-08_074500_HF_S002"
+    name = "2010-09-08_074500_HF_S002_S001"
+    #name = "school_avoiding_upstream"
     vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
 
     fps = 10
@@ -26,6 +27,7 @@ if __name__ == "__main__":
     # create cv video
     print("Opening video...")
     cap = cv2.VideoCapture(str(vid_path))
+    #o_video = cap_to_nparray(cap, format="BGR")
     video = cap_to_nparray(cap, format="HSV")
     s_channel = video[..., 2].squeeze()
 
@@ -41,6 +43,9 @@ if __name__ == "__main__":
     #cv2.imshow("boolean", bool_video)
     #cv2.waitKey(0)
 
+    #pixels = [()]
+    #view_frequency_swaths(s_video, pixels)
+
     print("Generating mean filter...")
     mean_video = mean_filter(s_channel, thresh=40)
     #cv2.namedWindow("mean", cv2.WINDOW_NORMAL)
@@ -48,11 +53,13 @@ if __name__ == "__main__":
     #cv2.waitKey(0)
 
     print("Done!")
+    cv2.namedWindow("frequency mask", cv2.WINDOW_NORMAL)
+    cv2.namedWindow("original", cv2.WINDOW_NORMAL)
     cv2.namedWindow("final", cv2.WINDOW_NORMAL)
     i=0
     while True:
         if i < mean_video.shape[0]:
-
+            o_frame = cv2.cvtColor(video[i], cv2.COLOR_HSV2BGR)
             frame = mean_video[i]*rev_bool_video
             frame = cv2.medianBlur(frame, 15)
             _, frame = cv2.threshold(frame, 100, 255, cv2.THRESH_BINARY)
@@ -68,6 +75,13 @@ if __name__ == "__main__":
             cv2.drawContours(image=frame, contours=big_contours, contourIdx=-1, color=(0, 0, 255), thickness=2, lineType=cv2.LINE_AA)
 
 
+            cv2.putText(o_frame, f"Frame: {i}",
+                        org=(100, 100),
+                        fontFace=cv2.FONT_HERSHEY_SIMPLEX,
+                        fontScale=1,
+                        color=(255,255,255),
+                        thickness=2,
+                        lineType=cv2.LINE_AA)
             cv2.putText(frame, f"Frame: {i}",
                         org=(100, 100),
                         fontFace=cv2.FONT_HERSHEY_SIMPLEX,
@@ -75,6 +89,8 @@ if __name__ == "__main__":
                         color=(255,255,255),
                         thickness=2,
                         lineType=cv2.LINE_AA)
+            cv2.imshow("frequency mask", bool_video)
+            cv2.imshow("original", o_frame)
             cv2.imshow("final", frame)
             if cv2.waitKey(int(1000/fps)) & 0xFF == ord('q'):
                 break

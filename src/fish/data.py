@@ -1,4 +1,5 @@
 
+import sys
 import numpy as np
 import cv2
 from pathlib import Path
@@ -33,6 +34,7 @@ def cap_to_nparray(cap, format='BGR'):
     # catch error
     if (cap.isOpened() == False):
         print ("Error opening video")
+        sys.exit(1)
 
     frameCount = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
     frameWidth = int(cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -43,7 +45,7 @@ def cap_to_nparray(cap, format='BGR'):
     ret = True
     while (fc < frameCount and ret):
         ret, frame = cap.read()
-        if format == "BGR":
+        if (format == "BGR"):
             buf[fc] = frame
         else:
             try:
