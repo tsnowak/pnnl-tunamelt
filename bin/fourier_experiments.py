@@ -103,7 +103,8 @@ if __name__ == "__main__":
             cv2.imshow("frequency mask", fourier_zero_rgb)
             cv2.imshow("original", o_frame)
             cv2.imshow("final", frame)
-            if cv2.waitKey(int(1000/fps)) & 0xFF == ord('q'):
+            k = cv2.waitKey(int(1000/fps))
+            if k == 27:
                 break
             i += 1
         else:
