@@ -17,4 +17,13 @@ The fish contained in these `.mp4`s are particularly difficult to see (detect). 
 
 - processing does not need to occur live/in-situ
 - consistently static objects can be removed
+
+
+- SOMETHING BIOLOGICAL
+- tortuousity (fish / non-linear movements)
+- brightness
+- false positives fine
+
+
+- fourier transform pixels should be good
 - 
