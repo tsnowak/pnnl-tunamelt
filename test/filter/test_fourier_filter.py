@@ -18,16 +18,16 @@ def test_filter_frequency():
     element_shape = (10, 15)
     n_frames = 1000
 
-    waveform, sampling_rate, length = generate_sinusoid_tile(freqs=freqs,
-                                                             element_shape=element_shape,
-                                                             n_frames=n_frames)
+    waveform, fps, length = generate_sinusoid_tile(freqs=freqs,
+                                                   element_shape=element_shape,
+                                                   n_frames=n_frames)
 
     # convert to format of filter
     video = np.transpose(waveform, (2, 0, 1))
     video = np.expand_dims(video, axis=-1)
 
     logger.debug(f"\nInput video shape: {video.shape}")
-    mask = fourier_filter(video=video, fps=sampling_rate, freq_range=(.5, 9))
+    mask = fourier_filter(video=video, fps=fps, freq_range=(.5, 9))
 
     logger.debug(
         f"\nVideo Shape: {waveform.shape}\nMask Shape: {mask.shape}")
@@ -46,7 +46,7 @@ def test_filter_frequency():
         if cntr == n_frames:
             cntr = 0
 
-        k = cv2.waitKey(int(1000*(1/sampling_rate)))
+        k = cv2.waitKey(int(1000*(1/fps)))
         if k == 27:
             cv2.destroyAllWindows()
             break

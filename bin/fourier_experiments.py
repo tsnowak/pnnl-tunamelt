@@ -7,6 +7,7 @@ from scipy.fft import fftshift
 from fish import logger
 from fish.data import get_file_path, cap_to_nparray
 from fish.filter import mean_filter, fourier_filter, crop_polygon
+from fish.utils import plot_time_domain_waveform
 
 if __name__ == "__main__":
 
@@ -34,6 +35,11 @@ if __name__ == "__main__":
     video = cap_to_nparray(cap, format="HSV")
     s_channel = video[..., 2].squeeze()
     logger.debug(s_channel.shape)
+
+    s_channel = np.expand_dims(s_channel, axis=-1)
+
+    point_of_interest = polygon[1] + (300, 300)
+    plot_time_domain_waveform(s_channel, fps, point_of_interest)
 
     # TODO: why does normalizing include static pieces of the video
     # get boolean mask of pixels with magnitude above mag_thresh in frequency range f_range
@@ -85,6 +91,14 @@ if __name__ == "__main__":
 
             # cv2.drawContours(image=frame, contours=big_contours, contourIdx=-1,
             #                 color=(0, 0, 255), thickness=2, lineType=cv2.LINE_AA)
+
+            point_of_interest = tuple(point_of_interest)
+            cv2.circle(o_frame, point_of_interest, color=(
+                255, 0, 0), radius=10, thickness=10)
+            cv2.circle(frame, point_of_interest, color=(
+                255, 0, 0), radius=10, thickness=10)
+            cv2.circle(fourier_zero_rgb, point_of_interest,
+                       color=(255, 0, 0), radius=10, thickness=10)
 
             cv2.putText(o_frame, f"Frame: {i}",
                         org=(100, 100),

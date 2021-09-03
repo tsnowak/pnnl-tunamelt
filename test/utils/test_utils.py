@@ -3,7 +3,7 @@
 import cv2
 import numpy as np
 from fish import REPO_PATH, logger
-from fish.utils import generate_sinusoid, generate_sinusoid_tile
+from fish.utils import generate_sinusoid, generate_sinusoid_tile, plot_time_domain_waveform
 
 
 def test_generate_sinusoid():
@@ -14,15 +14,15 @@ def test_generate_sinusoid():
     freq_2 = 1  # Hz
 
     length = max([1/freq_1, 1/freq_2])  # second video
-    sampling_rate = video_length/length  # samples per second; > 2*freq
+    fps = video_length/length  # samples per second; > 2*freq
     shape = (10, 15)  # video pixel resolution
     waveform_1 = generate_sinusoid(freq=freq_1,
-                                   sampling_rate=sampling_rate,
+                                   fps=fps,
                                    shape=shape,
                                    length=length
                                    )
     waveform_2 = generate_sinusoid(freq=freq_2,
-                                   sampling_rate=sampling_rate,
+                                   fps=fps,
                                    shape=shape,
                                    length=length
                                    )
@@ -41,7 +41,7 @@ def test_generate_sinusoid():
         if cntr == n_frames:
             cntr = 0
 
-        k = cv2.waitKey(int(1000*(1/sampling_rate)))
+        k = cv2.waitKey(int(1000*(1/fps)))
         if k == 27:
             cv2.destroyAllWindows()
             break
@@ -55,10 +55,10 @@ def test_generate_sinusoid_tile():
     element_shape = (10, 15)
     n_frames = 1000
 
-    waveform, sampling_rate, length = generate_sinusoid_tile(freqs=freqs,
-                                                             element_shape=element_shape,
-                                                             n_frames=n_frames
-                                                             )
+    waveform, fps, length = generate_sinusoid_tile(freqs=freqs,
+                                                   element_shape=element_shape,
+                                                   n_frames=n_frames
+                                                   )
 
     cv2.namedWindow("Sine Video", cv2.WINDOW_AUTOSIZE)
 
@@ -72,9 +72,26 @@ def test_generate_sinusoid_tile():
         if cntr == n_frames:
             cntr = 0
 
-        k = cv2.waitKey(int(1000*(1/sampling_rate)))
+        k = cv2.waitKey(int(1000*(1/fps)))
         if k == 27:
             cv2.destroyAllWindows()
             break
+
+    return None
+
+
+def test_plot_time_domain_waveform():
+
+    freqs = [9, 3, 1, 1/3, 1/9]
+    element_shape = (10, 15)
+    n_frames = 1000
+
+    waveform, fps, length = generate_sinusoid_tile(freqs=freqs,
+                                                   element_shape=element_shape,
+                                                   n_frames=n_frames
+                                                   )
+
+    waveform = np.expand_dims(np.transpose(waveform, (2, 0, 1)), axis=-1)
+    plot_time_domain_waveform(waveform, fps, (0, 0))
 
     return None
