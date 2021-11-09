@@ -7,6 +7,7 @@ from scipy.fft import fftshift
 from fish import logger
 from fish.data import get_file_path, cap_to_nparray
 from fish.filter import mean_filter, fourier_filter, crop_polygon
+from fish.filter import mean_threshold, max_threshold
 from fish.utils import plot_time_domain_waveform
 
 if __name__ == "__main__":
@@ -44,7 +45,8 @@ if __name__ == "__main__":
     # TODO: why does normalizing include static pieces of the video
     # get boolean mask of pixels with magnitude above mag_thresh in frequency range f_range
     print("Generating fourier mask...")
-    fourier_pos = fourier_filter(s_channel, fps, freq_range=(1.5, 3.0))
+    fourier_pos = fourier_filter(
+        s_channel, fps, f_thresh=max_threshold, freq_range=(1.5, 3.0))
     fourier_zero = np.abs(fourier_pos - 1.)
     # plt.figure(0)
     #plt.plot(s_freq, s_video[:, 690, 375])

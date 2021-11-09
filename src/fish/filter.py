@@ -50,7 +50,7 @@ def mean_filter(video, thresh):
     return out
 
 
-def fourier_filter(video, fps, freq_range: Optional[Tuple] = (1.5, 3.0)):
+def fourier_filter(video, fps, freq_range: Optional[Tuple] = (1.5, 3.0), f_thresh=None):
     '''
     Generates a binary mask of pixels which change at a certain
     periodicity within the video
@@ -59,6 +59,9 @@ def fourier_filter(video, fps, freq_range: Optional[Tuple] = (1.5, 3.0)):
         video: np.array (N, H, W, C) of video frames to process
         thresh: threshold in hertz of values to pass through the filter
     '''
+
+    if f_thresh is None:
+        f_thresh = max_threshold
 
     logger.debug(f"input video shape:{video.shape}")
     # take the fft of the video
@@ -84,7 +87,7 @@ def fourier_filter(video, fps, freq_range: Optional[Tuple] = (1.5, 3.0)):
     logger.debug(f"magnitude array shape: {mag.shape}")
 
     #mask = average_threshold(fft_video, freq, mag, freq_range, factor=2)
-    mask = max_threshold(fft_video, freq, mag, freq_range)
+    mask = f_thresh(fft_video, freq, mag, freq_range)
     logger.debug(f"per pixel mask: {mask.shape}")
 
     return mask
@@ -101,8 +104,12 @@ def get_in_range(fft_video, freq, freq_range):
     return in_freq_range, fft_video, freq
 
 
-def average_threshold(fft_video, freq, fft_mag, freq_range, factor=1.25):
+def mean_threshold(fft_video, freq, fft_mag, freq_range, factor=1.25):
     '''
+        Threshold pixels if within the frequency range they exhibit a 
+        magnitude greater than a factor times the mean of magnitudes
+        across all frequencies.
+
         Args:
             fft_video: fft of the video [N, H, W, C]
             freq: frequency components of the fft video [N,]
@@ -120,6 +127,9 @@ def average_threshold(fft_video, freq, fft_mag, freq_range, factor=1.25):
 
 def max_threshold(fft_video, freq, fft_mag, freq_range):
     '''
+        Threshold pixels if within the frequency range lies the maximum
+        magnitude across all frequencies.
+
         Args:
             fft_video: fft of the video [N, H, W, C]
             freq: frequency components of the fft video [N,]
