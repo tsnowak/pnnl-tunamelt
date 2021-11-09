@@ -50,7 +50,7 @@ def generate_sinusoid_tile(freqs, element_shape, n_frames):
     return output, fps, length
 
 
-def plot_time_domain_waveform(video, fps, pixel):
+def plot_time_domain_waveform(video, fps, pixel, freq_range=None):
     '''
         Args:
             video: [N, W, H, C]
@@ -93,6 +93,10 @@ def plot_time_domain_waveform(video, fps, pixel):
     plt.title(f"DFT of pixel {pixel}")
     plt.plot(freq, mag)
     plt.plot(freq, np.ones(mag.shape)*np.mean(mag))
+
+    if freq_range is not None:
+        plt.vlines(freq_range, -100, np.max(mag),
+                   colors='red', linestyles='dashed')
 
     plt.show()
 
