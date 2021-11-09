@@ -24,6 +24,7 @@ if __name__ == "__main__":
     vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
 
     fps = 10
+    freq_range = (1.25, 2.75)
     # define polygon region
     # bl, tl, tr, br
     polygon = np.array(
@@ -40,13 +41,13 @@ if __name__ == "__main__":
     s_channel = np.expand_dims(s_channel, axis=-1)
 
     point_of_interest = polygon[1] + (300, 300)
-    plot_time_domain_waveform(s_channel, fps, point_of_interest)
+    plot_time_domain_waveform(
+        s_channel, fps, point_of_interest, freq_range=freq_range)
 
     # TODO: why does normalizing include static pieces of the video
     # get boolean mask of pixels with magnitude above mag_thresh in frequency range f_range
     print("Generating fourier mask...")
-    fourier_pos = fourier_filter(
-        s_channel, fps, f_thresh=max_threshold, freq_range=(1.5, 3.0))
+    fourier_pos = fourier_filter(s_channel, fps, freq_range=freq_range)
     fourier_zero = np.abs(fourier_pos - 1.)
     # plt.figure(0)
     #plt.plot(s_freq, s_video[:, 690, 375])
