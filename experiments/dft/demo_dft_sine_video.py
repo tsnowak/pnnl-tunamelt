@@ -18,7 +18,7 @@ from skimage import img_as_ubyte
 
 from fish import REPO_PATH
 from fish.utils import generate_sinusoid_tile
-from fish.dft_filter import fourier_filter
+from fish.filter.dft import fourier_filter
 
 
 def main():

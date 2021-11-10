@@ -6,8 +6,8 @@ import imageio as iio
 
 from fish import REPO_PATH, logger
 from fish.data import get_file_path, cap_to_nparray
-from fish.dft_filter import fourier_filter
-from fish.filter import mean_filter, intensity_filter
+from fish.filter.dft import fourier_filter
+from fish.filter.common import mean_filter, intensity_filter
 
 if __name__ == "__main__":
 
