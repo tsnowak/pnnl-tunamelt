@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 from fish import logger
-from fish.filter import fourier_filter, mean_threshold, max_threshold
+from fish.dft_filter import fourier_filter, mean_threshold, max_threshold
 from fish.utils import generate_sinusoid_tile
 
 
