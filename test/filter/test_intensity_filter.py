@@ -57,7 +57,10 @@ def test_intensity_filter():
     cntr = 0
     while True:
         frame = np.concatenate(
-            (s_channel[cntr, ...], i_s_channel[cntr, ...]), axis=1)
+            (s_channel[cntr, ...].astype(np.uint8),
+             mf_s_channel[cntr, ...].astype(np.uint8),
+             i_s_channel[cntr, ...].astype(np.uint8)),
+            axis=1)
         cv2.imshow("Intensity Filter Video", frame)
 
         cntr += 1

@@ -63,11 +63,24 @@ def mean_filter(video: np.array):
 def intensity_filter(video: np.array):
     video = video.astype(np.float32)
 
-    # max standard deviation of any pixel
+    # calculate the std and max of each pixel over time
+    # per pixel
     std = np.max(np.std(video, axis=0))
-    max = np.max(video)
+    max = np.max(video, axis=0)
 
-    # keep pixels in the video that are within std of max
+    print(np.max(max))
+    # take average of n-largest pixel maxima
+    n = 500
+    max = np.mean(np.sort(max, axis=None)[-n:])
+    print(std, max)
+
+    # over entire image
+    # only one pixel passes this
+    #std = np.std(video)
+    #max = np.max(video)
+    #print(std, max)
+
+    # keep pixels in the video that are within std of their max
     out = np.multiply(video, video > (max - std))
 
     out = out.astype(np.uint8)
