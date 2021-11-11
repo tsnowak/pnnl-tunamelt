@@ -29,8 +29,8 @@ def main():
     n_frames = 1000
     filter_freq_range = (.5, 8.5)
 
-    # define place to save images
-    image_path = Path(REPO_PATH + '/experiments/dft/images')
+    # define place to save outputs
+    image_path = Path(REPO_PATH + '/experiments/dft/outputs')
     Path(image_path).mkdir(exist_ok=True)
 
     # Before filtering

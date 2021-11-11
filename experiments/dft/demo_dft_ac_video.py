@@ -20,8 +20,8 @@ if __name__ == "__main__":
     name = "2010-09-08_074500_HF_S002_S001"
     vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
 
-    # define place to save images
-    image_path = Path(REPO_PATH + '/experiments/dft/images')
+    # define place to save outputs
+    image_path = Path(REPO_PATH + '/experiments/dft/outputs')
     Path(image_path).mkdir(exist_ok=True)
 
     fps = 10
