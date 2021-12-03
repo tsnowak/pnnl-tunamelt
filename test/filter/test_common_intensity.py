@@ -6,7 +6,7 @@ import cv2
 
 from fish import REPO_PATH, logger
 from fish.data import get_file_path, cap_to_nparray
-from fish.filter.dft import fourier_filter
+from fish.filter.dft import dft_filter
 from fish.filter.common import mean_filter, intensity_filter
 
 
@@ -21,8 +21,8 @@ def test_intensity_filter():
     name = "2010-09-08_074500_HF_S002_S001"
     vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
 
-    # define place to save images
-    image_path = Path(REPO_PATH + '/experiments/dft/images')
+    # define place to save outputs
+    image_path = Path(REPO_PATH + '/experiments/dft/outputs')
     Path(image_path).mkdir(exist_ok=True)
 
     fps = 10
@@ -38,7 +38,7 @@ def test_intensity_filter():
     s_channel = video[..., 2].squeeze()
     s_channel = np.expand_dims(s_channel, axis=-1)
 
-    fourier_pos = fourier_filter(s_channel, fps, freq_range=filter_freq_range)
+    fourier_pos = dft_filter(s_channel, fps, freq_range=filter_freq_range)
     fourier_zero = np.abs(fourier_pos - 1.)
 
     # generate the rolling average filter

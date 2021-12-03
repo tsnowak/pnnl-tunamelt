@@ -45,7 +45,7 @@ def crop_polygon(img, pts):
     return dst
 
 
-def mean_filter(video: np.array):
+def mean_filter(video: np.array) -> Tuple[np.array, np.array]:
     video = video.astype(np.float32)
 
     # calculate background
@@ -60,7 +60,7 @@ def mean_filter(video: np.array):
     return out, mean
 
 
-def intensity_filter(video: np.array):
+def intensity_filter(video: np.array) -> np.array:
     video = video.astype(np.float32)
 
     # calculate the std and max of each pixel over time

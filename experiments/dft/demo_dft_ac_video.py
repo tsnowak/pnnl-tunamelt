@@ -6,7 +6,7 @@ import imageio as iio
 
 from fish import REPO_PATH, logger
 from fish.data import get_file_path, cap_to_nparray
-from fish.filter.dft import fourier_filter
+from fish.filter.dft import dft_filter
 
 if __name__ == "__main__":
 
@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
     # generate the filter
     logger.info("Generating DFT filter...")
-    fourier_pos = fourier_filter(s_channel, fps, freq_range=filter_freq_range)
+    fourier_pos = dft_filter(s_channel, fps, freq_range=filter_freq_range)
     fourier_zero = np.abs(fourier_pos - 1.)
 
     # write to gifs

@@ -6,7 +6,7 @@ import imageio as iio
 
 from fish import REPO_PATH, logger
 from fish.data import get_file_path, cap_to_nparray
-from fish.filter.dft import fourier_filter
+from fish.filter.dft import dft_filter
 from fish.filter.common import mean_filter, intensity_filter
 
 if __name__ == "__main__":
@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     # generate the DFT filter
     logger.info("Generating DFT filter...")
-    fourier_pos = fourier_filter(s_channel, fps, freq_range=filter_freq_range)
+    fourier_pos = dft_filter(s_channel, fps, freq_range=filter_freq_range)
     fourier_zero = np.abs(fourier_pos - 1.)
 
     # apply the rolling average filter
@@ -50,16 +50,16 @@ if __name__ == "__main__":
     background_subtracted, avg_filter = mean_filter(s_channel)
 
     # apply the fourier filter
-    fourier_filtered = np.multiply(background_subtracted, fourier_zero)
+    dft_filtered = np.multiply(background_subtracted, fourier_zero)
 
     # apply intensity filter
-    intensity_filtered = intensity_filter(fourier_filtered)
+    intensity_filtered = intensity_filter(dft_filtered)
 
     # write to gifs
     logger.info("Writing to file...")
     raw_writer = iio.get_writer(str(image_path) + '/demo_raw_video.gif',
                                 mode='I', fps=fps)
-    dft_writer = iio.get_writer(str(image_path) + '/demo_fourier_filtered_video.gif',
+    dft_writer = iio.get_writer(str(image_path) + '/demo_dft_filtered_video.gif',
                                 mode='I', fps=fps)
     bgf_writer = iio.get_writer(str(image_path) + '/demo_background-subtracted_video.gif',
                                 mode='I', fps=fps)
@@ -67,7 +67,7 @@ if __name__ == "__main__":
                                mode='I', fps=fps)
     for i in range(n):
         raw_writer.append_data(s_channel[i, ...].astype(np.uint8))
-        dft_writer.append_data(fourier_filtered[i, ...].astype(np.uint8))
+        dft_writer.append_data(dft_filtered[i, ...].astype(np.uint8))
         bgf_writer.append_data(background_subtracted[i, ...].astype(np.uint8))
         if_writer.append_data(intensity_filtered[i, ...].astype(np.uint8))
     raw_writer.close()

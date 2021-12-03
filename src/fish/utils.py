@@ -1,11 +1,23 @@
 
-from typing import Tuple
+from typing import Tuple, TypeVar, Generic, TypeVar
 import numpy as np
 
 from scipy.fft import fft, fftn, fftfreq, fftshift
 from matplotlib import pyplot as plt
 
 from fish import logger
+
+Shape = TypeVar("Shape")
+DType = TypeVar("DType")
+
+
+class Array(np.ndarray, Generic[Shape, DType]):
+    """
+        Numpy Array docstring use
+        Ex:
+        image: Array['H,W,3', np.uint8]
+    """
+    pass
 
 
 def generate_sinusoid(freq: int, fps: int, shape: Tuple, length=float):

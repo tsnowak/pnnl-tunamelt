@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 from fish import logger
-from fish.filter.dft import fourier_filter, mean_threshold, max_threshold
+from fish.filter.dft import dft_filter, mean_threshold, max_threshold
 from fish.utils import generate_sinusoid_tile
 
 
@@ -27,7 +27,7 @@ def test_filter_frequency():
     video = np.expand_dims(video, axis=-1)
 
     logger.debug(f"\nInput video shape: {video.shape}")
-    mask = fourier_filter(video=video, fps=fps, freq_range=(.5, 9))
+    mask = dft_filter(video=video, fps=fps, freq_range=(.5, 9))
 
     logger.debug(
         f"\nVideo Shape: {waveform.shape}\nMask Shape: {mask.shape}")

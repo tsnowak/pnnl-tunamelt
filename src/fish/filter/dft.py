@@ -1,22 +1,34 @@
+"""
+Implementation of DFT used to mask pixels exhibiting certain frequencies
+"""
+from typing import Callable, Optional, Tuple
 
-from typing import Optional, Tuple
 import numpy as np
-from skimage.restoration import denoise_wavelet
-from sklearn.preprocessing import normalize
-from scipy.fft import fft, fftn, fftfreq, fftshift
+from scipy.fft import fft, fftfreq, fftshift
 
 from fish import logger
+from fish.utils import Array
 
 
-def fourier_filter(video, fps, freq_range: Optional[Tuple] = (1.5, 3.0), thresh_func=None):
-    '''
-    Generates a binary mask of pixels which change at a certain
+def dft_filter(video: Array["N,H,W,C", np.uint8],
+               fps: int,
+               freq_range: Optional[Tuple] = (1.5, 3.0),
+               thresh_func: Optional[Callable[[Tuple],
+                                              Array["N,H,W,C",
+                                                    np.float32]]] = None
+               ) -> Array["H,W,C", np.uint8]:
+    """Generates a binary mask of pixels which change at a certain
     periodicity within the video
 
     Args:
-        video: np.array (N, H, W, C) of video frames to process
-        thresh: threshold in hertz of values to pass through the filter
-    '''
+        video (np.array): [N, H, W, C] Video to process
+        fps (int): Frames per seconds of the video
+        freq_range (Optional[Tuple], optional): Range of frequencies to detect. Defaults to (1.5, 3.0).
+        thresh_func (Callable, optional): Function used to determine whether frequency component is sufficiently high. Defaults to None.
+
+    Returns:
+        np.array: [H, W, C] Binary mask with pixels exhibiting frequencies in freq_range = 1
+    """
 
     if thresh_func is None:
         thresh_func = max_threshold
@@ -41,17 +53,17 @@ def fourier_filter(video, fps, freq_range: Optional[Tuple] = (1.5, 3.0), thresh_
     # magnitude of that frequency component
     mag = np.absolute(fft_video)
     # phase between sine (im) and cosine (re) of that freq. component
-    #phase = np.angle(fft_video)
+    # phase = np.angle(fft_video)
     logger.debug(f"magnitude array shape: {mag.shape}")
 
-    #mask = average_threshold(fft_video, freq, mag, freq_range, factor=2)
+    # mask = average_threshold(fft_video, freq, mag, freq_range, factor=2)
     mask = thresh_func(fft_video, freq, mag, freq_range)
     logger.debug(f"per pixel mask: {mask.shape}")
 
     return mask
 
 
-def get_in_range(fft_video, freq, freq_range):
+def get_in_range(fft_video: np.array, freq: np.array, freq_range: Tuple):
     # get components within the desired frequency range
     in_freq_range = np.argwhere(
         (freq > freq_range[0]) * (freq < freq_range[1])).squeeze()
@@ -62,9 +74,13 @@ def get_in_range(fft_video, freq, freq_range):
     return in_freq_range, fft_video, freq
 
 
-def mean_threshold(fft_video, freq, fft_mag, freq_range, factor=1.25):
+def mean_threshold(fft_video: np.array,
+                   freq: np.array,
+                   fft_mag: np.array,
+                   freq_range: Tuple,
+                   factor: Optional[float] = 1.25):
     '''
-        Threshold pixels if within the frequency range they exhibit a 
+        Threshold pixels if within the frequency range they exhibit a
         magnitude greater than a factor times the mean of magnitudes
         across all frequencies.
 
@@ -83,7 +99,10 @@ def mean_threshold(fft_video, freq, fft_mag, freq_range, factor=1.25):
     return mask
 
 
-def max_threshold(fft_video, freq, fft_mag, freq_range):
+def max_threshold(fft_video: np.array,
+                  freq: np.array,
+                  fft_mag: np.array,
+                  freq_range: Tuple):
     '''
         Threshold pixels if within the frequency range lies the maximum
         magnitude across all frequencies.

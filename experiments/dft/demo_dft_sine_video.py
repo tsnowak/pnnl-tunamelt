@@ -18,7 +18,7 @@ from skimage import img_as_ubyte
 
 from fish import REPO_PATH
 from fish.utils import generate_sinusoid_tile
-from fish.filter.dft import fourier_filter
+from fish.filter.dft import dft_filter
 
 
 def main():
@@ -54,7 +54,7 @@ def main():
     video = np.expand_dims(video, axis=-1)
 
     # apply filter: mask - 1 in range, 0 out of range; inv_mask - 0 in range, 1 out of range
-    mask = fourier_filter(video=video, fps=fps, freq_range=filter_freq_range)
+    mask = dft_filter(video=video, fps=fps, freq_range=filter_freq_range)
     inv_mask = np.abs(mask - 1.)
 
     # write filtered waveform video to file
