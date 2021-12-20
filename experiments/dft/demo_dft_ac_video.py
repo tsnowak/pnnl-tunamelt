@@ -13,8 +13,8 @@ if __name__ == "__main__":
     # TODO - modify for generalized usage
     # load data
     data_paths = [
-        '/Users/nowa201/Data/fish_detector',
-        '/data/nowa201/Projects/fish_detection/mp4'
+        '/home/bl33m/Desktop/windowsshare/fish_detection/',
+        '/home/bl33m/Desktop/windowsshare/mp4/mp4'
     ]
 
     name = "2010-09-08_074500_HF_S002_S001"

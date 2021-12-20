@@ -1,0 +1,9 @@
+name: fish_detection
+
+dependencies:
+  - opencv
+  - matplotlib
+  - pandas
+  - pip
+  - python
+  - scikit-learn
