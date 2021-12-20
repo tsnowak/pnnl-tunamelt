@@ -1,6 +1,7 @@
-
+import sys
 from typing import Tuple, TypeVar, Generic, TypeVar
 import numpy as np
+import argparse
 
 from scipy.fft import fft, fftn, fftfreq, fftshift
 from matplotlib import pyplot as plt
@@ -17,7 +18,6 @@ class Array(np.ndarray, Generic[Shape, DType]):
         Ex:
         image: Array['H,W,3', np.uint8]
     """
-    pass
 
 
 def generate_sinusoid(freq: int, fps: int, shape: Tuple, length=float):
@@ -47,9 +47,9 @@ def generate_sinusoid_tile(freqs, element_shape, n_frames):
         Returns numpy array representing a video of
         multi-frequency image tiles
     '''
-
-    length = max([1/f for f in freqs])  # video length in seconds
-    fps = n_frames / length   # samples per second
+    # hold fps constant
+    fps = 10
+    length = n_frames / fps
 
     waveforms = []
     for freq in freqs:
@@ -60,3 +60,31 @@ def generate_sinusoid_tile(freqs, element_shape, n_frames):
 
     output = np.concatenate(waveforms, axis=1)
     return output, fps, length
+
+
+def crop_polygon(img, pts):
+    '''
+        crop polygon of image, and return with black background
+    '''
+    # (1) Crop the bounding rect
+    rect = cv2.boundingRect(pts)
+    x, y, w, h = rect
+    croped = img[y:y+h, x:x+w].copy()
+
+    # (2) make mask
+    pts = pts - pts.min(axis=0)
+
+    mask = np.zeros(croped.shape[:2], np.uint8)
+    cv2.drawContours(mask, [pts], -1, (255, 255, 255), -1, cv2.LINE_AA)
+
+    # (3) do bit-op
+    dst = cv2.bitwise_and(croped, croped, mask=mask)
+
+    return dst
+
+
+class DefaultHelpParser(argparse.ArgumentParser):
+    def error(self, message):
+        sys.stderr.write('error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)

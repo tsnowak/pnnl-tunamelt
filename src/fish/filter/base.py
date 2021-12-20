@@ -18,15 +18,20 @@ class OfflineFilter():
         self.video = video
 
         # ensure fps is not confused w/ period
-        assert isinstance(fps, int), \
-            f"fps is not an integer {fps, type(fps)}"
         assert fps != 0, \
             f"fps is zero {fps}"
         self.fps = fps
 
         logger.info(f"Input video of shape {video.shape} @ {fps}FPS")
 
-    def filter(self,):
+    def generate(self,):
+        """ Calculate the mask/filter to apply
+        """
+        raise NotImplementedError()
+
+    def apply(self, video: Optional[Array["N,H,W,C", np.uint8]] = None):
+        """ Applies the mask/filter to the original video or given video/frame
+        """
         raise NotImplementedError()
 
 

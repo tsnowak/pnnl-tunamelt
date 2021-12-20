@@ -29,7 +29,7 @@ def test_filter_frequency():
 
     logger.debug(f"\nInput video shape: {video.shape}")
     dft = DFTFilter(video, fps, freq_range=filter_freq_range)
-    mask = dft.filter()
+    mask = dft.generate()
 
     # verify mask shape
     assert mask.shape[:2] == video.shape[1:3], \

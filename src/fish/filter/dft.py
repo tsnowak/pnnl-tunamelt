@@ -49,7 +49,22 @@ class DFTFilter(OfflineFilter):
 
         logger.info(f"Initialized {self.__class__} filter.")
 
-    def filter(self,) -> Array["H,W,1", np.bool_]:
+    def apply(self, video: Optional[Array["N,H,W,C", np.uint8]] = None):
+
+        if video is None:
+            video = self.video
+        mask = self.generate()
+        inv_mask = np.abs(mask - 1.)
+
+        assert (video.shape[1:3] == mask.shape[:2]), \
+            f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{mask.shape}"
+
+        out = video*inv_mask
+        logger.info(f"Returning filtered video of shape {out.shape}")
+
+        return out
+
+    def generate(self,) -> Array["H,W,1", np.bool_]:
 
         # take the fft of the video
         fft_video = fft(self.video, axis=0, workers=-1)

@@ -18,19 +18,19 @@ from skimage import img_as_ubyte
 
 from fish import REPO_PATH
 from fish.utils import generate_sinusoid_tile
-from fish.filter.dft import dft_filter
+from fish.filter.dft import DFTFilter
 
 
 def main():
 
     # define waveform properties
-    freqs = [9, 3, 1, 1/3, 1/9]
+    freqs = [3, 1, 1/3, 1/9, 1/27]
     element_shape = (10, 15)
     n_frames = 1000
     filter_freq_range = (.5, 8.5)
 
     # define place to save outputs
-    image_path = Path(REPO_PATH + '/experiments/dft/outputs')
+    image_path = Path(REPO_PATH + '/experiments/dft/outputs/dft_sine_video')
     Path(image_path).mkdir(exist_ok=True)
 
     # Before filtering
@@ -54,12 +54,14 @@ def main():
     video = np.expand_dims(video, axis=-1)
 
     # apply filter: mask - 1 in range, 0 out of range; inv_mask - 0 in range, 1 out of range
-    mask = dft_filter(video=video, fps=fps, freq_range=filter_freq_range)
+    dft = DFTFilter(video=video, fps=fps, freq_range=filter_freq_range)
+    mask = dft.generate()
     inv_mask = np.abs(mask - 1.)
 
     # write filtered waveform video to file
+    # fps of faster modes can look off due to nyquist
     writer = iio.get_writer(str(image_path) + '/demo_filtered_sine.gif',
-                            mode='I', fps=int(1000/fps))
+                            mode='I', fps=fps)
     for i in range(n):
         combined_frame = np.concatenate(
             [waveform[:, :, i], waveform[:, :, i]*inv_mask.squeeze()], axis=0)
