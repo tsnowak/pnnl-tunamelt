@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 from fish import logger
-from fish.filter.dft import dft_filter, mean_threshold, max_threshold
+from fish.filter.dft import DFTFilter
 from fish.utils import generate_sinusoid_tile
 
 
@@ -14,7 +14,8 @@ def test_filter_frequency():
         which oscillate at differing frequencies
     '''
 
-    freqs = [9, 3, 1, 1/3, 1/9]
+    freqs = np.array([9, 3, 1, 1/3, 1/9], dtype=np.float32)
+    filter_freq_range = (.5, 9)
     element_shape = (10, 15)
     n_frames = 1000
 
@@ -27,28 +28,31 @@ def test_filter_frequency():
     video = np.expand_dims(video, axis=-1)
 
     logger.debug(f"\nInput video shape: {video.shape}")
-    mask = dft_filter(video=video, fps=fps, freq_range=(.5, 9))
+    dft = DFTFilter(video, fps, freq_range=filter_freq_range)
+    mask = dft.filter()
 
-    logger.debug(
-        f"\nVideo Shape: {waveform.shape}\nMask Shape: {mask.shape}")
+    # verify mask shape
+    assert mask.shape[:2] == video.shape[1:3], \
+        f"Mask and original video differ in H,W \
+            \nMask: {mask.shape[:2]} \
+            \nVideo: {video.shape[1:3]}"
 
-    cv2.namedWindow("Sine Video", cv2.WINDOW_AUTOSIZE)
+    # verify mask results
+    # fetch frequencies that should be masked
+    freqs_in_range = (
+        freqs <= filter_freq_range[1])*(freqs >= filter_freq_range[0])
+    # Get the indices in the waveform that contain these frequencies
+    indices = np.squeeze(np.argwhere(freqs_in_range == True))
+    # step through waveform bins and verify pixels are correctly masked
+    for i in range(len(freqs)):
+        bin_is_one = np.all(
+            mask[:, element_shape[1]*i:element_shape[1]*(i+1), :] == 1)
+        logger.debug(
+            f"Mask value for waveform bin {i} equals 1? {bin_is_one}")
+        assert (bin_is_one) == (i in indices), \
+            f"Mask did not remove all frequencies in range.\
+                \nVideo frequencies: {freqs}\
+                \nIn range: {freqs_in_range}.\
+                \nFailure: Pixels {element_shape[1]*i} through {element_shape[1]*(i+1)} are not == 1"
 
-    # show the video until escape is pressed
-    n_frames = waveform.shape[2]
-    cntr = 0
-    while True:
-        combined_frame = np.concatenate(
-            [waveform[:, :, cntr], mask.squeeze()], axis=0)
-        cv2.imshow("Sine Video", combined_frame)
-
-        cntr += 1
-        if cntr == n_frames:
-            cntr = 0
-
-        k = cv2.waitKey(int(1000*(1/fps)))
-        if k == 27:
-            cv2.destroyAllWindows()
-            break
-
-    return None
+    logger.info("DFT filter is working properly.")
