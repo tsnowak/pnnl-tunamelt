@@ -47,7 +47,7 @@ class DFTFilter(OfflineFilter):
         self.thresh_func = thresh_func
         logger.debug(f"Using {thresh_func.__name__} thresholding function.")
 
-        logger.info(f"Initialized {self.__class__} filter.")
+        logger.debug(f"Initialized {self.__class__} filter.")
 
     def apply(self, video: Optional[Array["N,H,W,C", np.uint8]] = None):
 
@@ -60,7 +60,7 @@ class DFTFilter(OfflineFilter):
             f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{mask.shape}"
 
         out = video*inv_mask
-        logger.info(f"Returning filtered video of shape {out.shape}")
+        logger.debug(f"Returning filtered video of shape {out.shape}")
 
         return out
 

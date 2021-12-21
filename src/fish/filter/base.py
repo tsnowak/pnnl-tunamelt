@@ -10,19 +10,19 @@ class OfflineFilter():
 
     def __init__(self,
                  video: Array["N,H,W,C", np.uint8],
-                 fps: int):
+                 fps):
 
         # control video type
         assert isinstance(video, np.ndarray), \
             f"Video is not np.ndarray {video.dtype}"
         self.video = video
 
-        # ensure fps is not confused w/ period
+        # TODO: ensure fps is not confused w/ period
         assert fps != 0, \
             f"fps is zero {fps}"
         self.fps = fps
 
-        logger.info(f"Input video of shape {video.shape} @ {fps}FPS")
+        logger.debug(f"Input video of shape {video.shape} @ {fps}FPS")
 
     def generate(self,):
         """ Calculate the mask/filter to apply

@@ -11,83 +11,75 @@ from sklearn.preprocessing import normalize
 from scipy.fft import fft, fftn, fftfreq, fftshift
 
 from fish import logger
+from fish.filter.base import OfflineFilter
+from fish.utils import Array
 
 
-def wavelet_denoising(x, method='BayesShrink'):
-    '''
-        ineffective on low-res videos
-    '''
+class MeanFilter(OfflineFilter):
 
-    x = denoise_wavelet(x, multichannel=True, convert2ycbcr=False,
-                        method=method, mode='soft', rescale_sigma=True)
+    def __init__(self, video: Array["N,H,W,C", np.uint8], fps):
+        super().__init__(video, fps)
+        self.video = video.astype(np.float32)
+        logger.debug(f"Initialized {self.__class__} filter.")
 
-    return x
+    def apply(self, video=None):
+        if video is None:
+            video = self.video
+        mask = self.generate()
+        out = np.multiply(video, mask)
+        out = out.astype(np.uint8)
+        logger.debug(f"Mean background filtered video of shape: {out.shape}")
+        return out
 
+    def generate(self,):
+        # calculate background
+        mean = np.mean(self.video, axis=0)
+        avg_value = np.mean(mean)
 
-def crop_polygon(img, pts):
-    '''
-        crop polygon of image, and return with black background
-    '''
-    # (1) Crop the bounding rect
-    rect = cv2.boundingRect(pts)
-    x, y, w, h = rect
-    croped = img[y:y+h, x:x+w].copy()
-
-    # (2) make mask
-    pts = pts - pts.min(axis=0)
-
-    mask = np.zeros(croped.shape[:2], np.uint8)
-    cv2.drawContours(mask, [pts], -1, (255, 255, 255), -1, cv2.LINE_AA)
-
-    # (3) do bit-op
-    dst = cv2.bitwise_and(croped, croped, mask=mask)
-
-    return dst
+        # remove background
+        diff = np.subtract(self.video, mean)
+        mask = diff > avg_value
+        return mask
 
 
-def mean_filter(video: np.array) -> Tuple[np.array, np.array]:
-    video = video.astype(np.float32)
+class IntensityFilter(OfflineFilter):
 
-    # calculate background
-    mean = np.mean(video, axis=0)
-    avg_value = np.mean(mean)
+    def __init__(self, video: Array["N,H,W,C", np.uint8], fps, n=500):
+        super().__init__(video, fps)
+        self.video = video.astype(np.float32)
+        self.n = n
 
-    # remove background
-    diff = np.subtract(video, mean)
-    out = np.multiply(video, diff > avg_value)
+        logger.debug(f"Initialized {self.__class__} filter.")
 
-    out = out.astype(np.uint8)
-    return out, mean
+    def apply(self, video=None):
 
+        if video is None:
+            video = self.video
+        mask = self.generate()
+        out = np.multiply(video, mask)
+        out = out.astype(np.uint8)
+        logger.debug(f"Intensity filtered video of shape: {out.shape}")
+        return out
 
-def intensity_filter(video: np.array) -> np.array:
-    video = video.astype(np.float32)
+    def generate(self,):
+        std_val = np.max(np.std(self.video, axis=0))
+        max_val = np.max(self.video, axis=0)
 
-    # calculate the std and max of each pixel over time
-    # per pixel
-    std = np.max(np.std(video, axis=0))
-    max = np.max(video, axis=0)
+        logger.debug(f"Max value: {np.max(max_val)}")
+        # take average of n-largest pixel maxima
+        max_val = np.mean(np.sort(max_val, axis=None)[-self.n:])
+        logger.debug(f"std and max: {std_val, max_val}")
 
-    print(np.max(max))
-    # take average of n-largest pixel maxima
-    n = 500
-    max = np.mean(np.sort(max, axis=None)[-n:])
-    print(std, max)
+        # over entire image
+        # only one pixel passes this
+        #std = np.std(video)
+        #max = np.max(video)
+        #print(std, max_val)
 
-    # over entire image
-    # only one pixel passes this
-    #std = np.std(video)
-    #max = np.max(video)
-    #print(std, max)
+        # only keep pixels in the video that are within std of their max
+        # apply mask in apply
+        mask = self.video > (max_val - std_val)
 
-    # keep pixels in the video that are within std of their max
-    out = np.multiply(video, video > (max - std))
+        logger.debug(f"Generated intensity filter mask of shape: {mask.shape}")
 
-    out = out.astype(np.uint8)
-    return out
-
-
-def volume_filter(video: np.array):
-    # can calculate probable volume range of clusters in the video
-    # given their range, pixel area, and AC intrinsics
-    pass
+        return mask

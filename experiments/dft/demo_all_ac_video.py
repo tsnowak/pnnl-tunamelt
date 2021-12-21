@@ -6,9 +6,9 @@ import imageio as iio
 import argparse
 
 from fish import REPO_PATH, logger
-from fish.data import get_file_path, cap_to_nparray
+from fish.data import prep_exp_data, cap_to_nparray
 from fish.filter.dft import DFTFilter
-from fish.filter.common import mean_filter, intensity_filter
+from fish.filter.common import IntensityFilter, MeanFilter
 from fish.utils import DefaultHelpParser
 
 parser = DefaultHelpParser(description="Input path of video to filter")
@@ -20,6 +20,8 @@ parser.add_argument(
     type=str,
     help="Data directory that can be used to reference files without supplying a full path."
 )
+#name = "2010-09-08_081500_HF_S021"
+#name = "2010-09-09_020001_HF_S013"
 parser.add_argument(
     'file_name',
     metavar='f',
@@ -32,32 +34,11 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
 
-    # TODO - modify for generalized usage
-    # load data
     data_dir = args.data_dir
     file_name = args.file_name
-    #name = "2010-09-08_081500_HF_S021"
-    #name = "2010-09-09_020001_HF_S013"
 
-    if Path(data_dir + "/" + file_name).is_file():
-        file_name = file_name
-        data_dir = data_dir
-    elif Path(data_dir + "/" + file_name + ".mp4").is_file():
-        file_name = file_name + ".mp4"
-        data_dir = data_dir
-    elif Path(file_name).is_file():
-        data_dir = str(Path(file_name).parent)
-        file_name = str(Path(file_name).name)
-    else:
-        raise ValueError(
-            f"Invalid data_dir or file_name provided.\ndata_dir: {data_dir}\nfile_name: {file_name}")
-
-    logger.info(f"Found file at: {data_dir}/{file_name}")
-    vid_path = get_file_path(file_name, [data_dir], absolute=True)
-
-    # define place to save outputs
-    image_path = Path(REPO_PATH + '/experiments/dft/outputs/all_ac_video')
-    Path(image_path).mkdir(exist_ok=True)
+    vid_path, image_path = prep_exp_data(data_dir, file_name,
+                                         '/experiments/dft/outputs/all_ac_video')
 
     fps = 10
     filter_freq_range = (1.25, 2.75)
@@ -74,7 +55,8 @@ if __name__ == "__main__":
 
     # generate background subtraction
     logger.info("Generating Rolling Average filter...")
-    background_subtracted, avg_filter = mean_filter(s_channel)
+    m_filter = MeanFilter(s_channel, fps)
+    background_subtracted = m_filter.apply()
 
     # generate the DFT filter
     logger.info("Generating DFT filter...")
@@ -82,7 +64,9 @@ if __name__ == "__main__":
     dft_filtered = dft.apply(background_subtracted)
 
     # apply intensity filter
-    intensity_filtered = intensity_filter(dft_filtered)
+    logger.info("Generating Intensity filter...")
+    i_filter = IntensityFilter(dft_filtered, fps, n=500)
+    intensity_filtered = i_filter.apply()
 
     # write to gifs
     logger.info("Writing to file...")
