@@ -50,16 +50,18 @@ def svd_filter(video: Array["N,H,W,C", np.uint8],
 
 
     # trying to take off vectores from either side 
-#    for i in range(0,10):
- #       low_rank += s[i]*np.outer(u.T[i],v[i])
+    for i in range(0,10):
+        low_rank += s[i]*np.outer(u.T[i],v[i])
+
     mask = np.zeros((video.shape[1],video.shape[2])) 
-    for i in range(1):
+
+    for i in range(0, 100):
         high_rank += np.expand_dims(u[:,i],1)*s[i]*np.expand_dims(v[i,:],0)
         mask += np.reshape(high_rank[:, i], (video.shape[1],video.shape[2]))
 
 
-  #  for i in range(60, 48, -1):
-   #     mid_rank += np.expand_dims(u[:,i],1)*s[i]*np.expand_dims(v[i,:],0)
+    for i in range(60, 40, -1):
+        mid_rank += np.expand_dims(u[:,i],1)*s[i]*np.expand_dims(v[i,:],0)
 
 
     logger.debug(f"input video shape:{low_rank.shape}");
@@ -69,9 +71,10 @@ def svd_filter(video: Array["N,H,W,C", np.uint8],
     background = np.reshape(low_rank[:, 49], (video.shape[1],video.shape[2]))
     foreground = np.reshape(high_rank[:, 49], (video.shape[1],video.shape[2]))
 
-    plt.imsave("mask.png", mask)
-    plt.imsave("background.png", background)
-    plt.imsave("foreground.png", foreground)
+    plt.imsave("mask.png", mask, cmap='Greys')
+    plt.imsave("background.png", background, cmap='Greys')
+    plt.imsave("foreground.png", foreground, cmap='Greys')
+    plt.imsave("middleground.png", middleground, cmap='Greys')
     
     filter_writer = iio.get_writer('demo_svd.gif', mode = 'I', fps=fps)
     raw_writer = iio.get_writer('raw_video.gif', mode = 'I', fps=fps)

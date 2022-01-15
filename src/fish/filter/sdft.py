@@ -15,7 +15,7 @@ from fish.utils import Array
 
 def sdft_filter(video: Array["N,H,W,C", np.uint8],
                 fps: int,
-                windowSize: int = 40, 
+                windowSize: int = 20, 
                 freq_range: Optional[Tuple] = (1.5, 3.0),
                 thresh_func: Optional[Callable[[Tuple],
                                                Array["N,H,W,C",
@@ -34,34 +34,46 @@ def sdft_filter(video: Array["N,H,W,C", np.uint8],
         thresh_func = max_threshold
 
     logger.debug(f"input video shape:{video.shape}")
-    fft_video = utils.SDFT(windowSize)
+    #fft_video = utils.SDFT(windowSize)
     # take the initial fft of the video
 
-    for i in range(40):
-        fft_video = fft_video.update(video[i])   
+    #for i in range(41):
+    #    fft_video = fft_video.update(video[i])   
 
-    ''' 
-    for n in range(windowSize, video.shape[0]):
-        delta = np.subtract(video[n, :, :, :], video[n-windowSize, :, :, :])
-        for i in range(windowSize):
-            fft_video[i] = (fft_video[i] + delta)*(np.exp(2j*np.pi*i/windowSize))
-    '''
-    fft_video = fftshift(fft_video, axes=0)  # 0 freq at center
+    fft_video = fft(video[0:windowSize], axis=0)
+    
+    #print(fft_video.shape)
+    
+    for n in range(windowSize, video.shape[0]): 
+        delta = video[n] - video[(n-windowSize)]
+        for f in range(windowSize):
+            fft_video[f] += delta.astype(complex)
+            complexF = np.exp((2j)*np.pi*f/windowSize)
+            fft_video[f] *= complexF
+    
+    #print(fft_video.shape)
+
+    fft_video = np.fft.fftshift(np.abs(fft_video), axes=0)  # 0 freq at center
     # For each component get the fr1equency center that it represents
     freq = fftfreq(windowSize, d=1/fps)
     freq = fftshift(freq)
     logger.debug(f"fft_video {fft_video.shape}")
 
     # only operate on positive frequencies (greater than 0 plus fudge)
-    freq_thresh = 1e-4
+    freq_thresh = 0.0001 
     pos_range = np.argwhere(freq > (0+freq_thresh)).squeeze()
+    print(pos_range)
     fft_video = fft_video[pos_range, ...]
     logger.debug(f"pos_range video: {fft_video.shape}")
     freq = freq[pos_range, ...]
-
+    
+    plt.figure()
+    plt.plot(freq, fft_video[:,:,100,0], lw = 1)
+    plt.show()
     # get magnitude and phase of each frequency component
     # magnitude of that frequency component
-    mag = np.absolute(fft_video)
+    #mag = np.absolute(fft_video)
+    mag = fft_video
     # phase between sine (im) and cosine (re) of that freq. component
     # phase = np.angle(fft_video)
     logger.debug(f"magnitude array shape: {mag.shape}")
