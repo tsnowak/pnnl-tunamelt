@@ -2,7 +2,7 @@ README.md
 setup.py
 src/fish/__init__.py
 src/fish/data.py
-src/fish/filter.py
+src/fish/utils.py
 src/fish/vis.py
 src/fish.egg-info/PKG-INFO
 src/fish.egg-info/SOURCES.txt
