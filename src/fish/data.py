@@ -28,7 +28,7 @@ def prep_exp_data(data_dir, file_name, rel_out_dir):
     # define place to save outputs
     image_path = Path(
         REPO_PATH + rel_out_dir)
-    Path(image_path).mkdir(exist_ok=True)
+    Path(image_path).mkdir(parents=True, exist_ok=True)
 
     return vid_path, image_path
 

@@ -13,6 +13,32 @@ Shape = TypeVar("Shape")
 DType = TypeVar("DType")
 
 
+def standard_parser():
+    parser = DefaultHelpParser(description="Input path of video to filter")
+    parser.add_argument(
+        '--data_dir',
+        nargs='?',
+        required=True,
+        type=str,
+        help="Data directory that can be used to reference files without supplying a full path."
+    )
+    #name = "2010-09-08_081500_HF_S021"
+    #name = "2010-09-09_020001_HF_S013"
+    parser.add_argument(
+        '--file_name',
+        nargs='?',
+        default="2010-09-08_074500_HF_S002_S001",
+        type=str,
+        help="Name of video file on which to run experiments."
+    )
+    args = parser.parse_args()
+
+    assert args.data_dir is not None
+    assert args.file_name is not None
+
+    return args
+
+
 class Array(np.ndarray, Generic[Shape, DType]):
     """
         Numpy Array docstring use

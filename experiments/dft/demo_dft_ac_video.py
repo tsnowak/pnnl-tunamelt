@@ -7,29 +7,10 @@ import imageio as iio
 from fish import REPO_PATH, logger
 from fish.data import prep_exp_data, cap_to_nparray
 from fish.filter.dft import DFTFilter
-from fish.utils import DefaultHelpParser
+from fish.utils import standard_parser
+from fish.vis import write_video
 
-parser = DefaultHelpParser(description="Input path of video to filter")
-parser.add_argument(
-    'data_dir',
-    metavar='d',
-    nargs='?',
-    default="/Users/nowa201/Data/fish_detector/mp4",
-    type=str,
-    help="Data directory that can be used to reference files without supplying a full path."
-)
-#name = "2010-09-08_081500_HF_S021"
-#name = "2010-09-09_020001_HF_S013"
-parser.add_argument(
-    'file_name',
-    metavar='f',
-    nargs='?',
-    default="2010-09-08_074500_HF_S002_S001",
-    type=str,
-    help="Name of video file on which to run experiments."
-)
-args = parser.parse_args()
-
+args = standard_parser()
 
 if __name__ == "__main__":
 
@@ -59,13 +40,8 @@ if __name__ == "__main__":
 
     # write to gifs
     logger.info("Writing to file...")
-    raw_writer = iio.get_writer(str(image_path) + '/demo_raw_video.gif',
-                                mode='I', fps=fps)
-    filter_writer = iio.get_writer(str(image_path) + '/demo_dft_filtered_video.gif',
-                                   mode='I', fps=fps)
-    for i in range(n):
-        frame = s_channel[i, ...] * fourier_zero
-        raw_writer.append_data(s_channel[i, ...].astype(np.uint8))
-        filter_writer.append_data(frame.astype(np.uint8))
-    raw_writer.close()
-    filter_writer.close()
+
+    videos = [s_channel, s_channel*fourier_zero]
+    names = ['demo_raw_video.gif', 'demo_dft_filtered_video.gif']
+    for video, name in zip(videos, names):
+        write_video(video, name, image_path, fps, n)

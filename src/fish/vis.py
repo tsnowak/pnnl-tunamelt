@@ -1,13 +1,25 @@
 
 from typing import Tuple, List
+from pathlib import Path
 
 from IPython.core.display import HTML
 import cv2
 import numpy as np
 from scipy.fft import fft, fftn, fftfreq, fftshift
 from matplotlib import pyplot as plt
+import imageio as iio
 
 from fish import logger
+
+
+def write_video(video: np.ndarray, name: str, out_path: Path, fps: int, video_length=int):
+
+    writer = iio.get_writer(str(out_path) + '/' + name, mode='I', fps=fps)
+
+    for i in range(video_length):
+        writer.append_data(video[i, ...].astype(np.uint8))
+
+    writer.close()
 
 
 def plot_time_domain_waveform(video, fps, pixel, freq_range=None):

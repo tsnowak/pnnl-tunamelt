@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "fish"
+version = "0.1.0"
+description = "Filtering and tracking of fish around underwater turbine installations."
+authors = ["Theodore Nowak <theodore.nowak@pnnl.gov>"]
+
+[tool.poetry.dependencies]
+python = "^3.9"
+opencv-python = "^4.5.5"
+scikit-learn = "^1.0.2"
+scikit-image = "^0.19.1"
+imageio = "^2.15.0"
+matplotlib = "^3.5.1"
+jupyter = "^1.0.0"
+pylint = "^2.12.2"
+flake8 = "^4.0.1"
+pytest = "^7.0.0"
+autopep8 = "^1.6.0"
+PyYAML = "^6.0"
+
+[tool.poetry.dev-dependencies]
+
+[build-system]
+requires = ["setuptools", "poetry_core>=1.0"]
+build-backend = "poetry.core.masonry.api"
