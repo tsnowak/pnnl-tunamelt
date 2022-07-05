@@ -1,10 +1,9 @@
-
 from pathlib import Path
 import numpy as np
 import cv2
 import imageio as iio
 
-from fish import REPO_PATH, logger
+from fish import REPO_PATH, log
 from fish.data import get_file_path, cap_to_nparray
 from fish.filter.svd import svd_filter
 
@@ -13,22 +12,22 @@ if __name__ == "__main__":
     # TODO - modify for generalized usage
     # load data
     data_paths = [
-        '/home/bl33m/Desktop/windowsshare/fish_detection/',
-        '/home/bl33m/Desktop/windowsshare/mp4/mp4'
+        "/home/bl33m/Desktop/windowsshare/fish_detection/",
+        "/home/bl33m/Desktop/windowsshare/mp4/mp4",
     ]
 
     name = "2010-09-08_074500_HF_S002_S001"
     vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
 
     # define place to save outputs
-    image_path = Path(REPO_PATH + '/experiments/dft/outputs')
+    image_path = Path(REPO_PATH + "/experiments/dft/outputs")
     Path(image_path).mkdir(exist_ok=True)
 
     fps = 10
     filter_freq_range = (1.25, 2.75)
 
     # create cv video
-    logger.info("Opening video...")
+    log.info("Opening video...")
     cap = cv2.VideoCapture(str(vid_path))
 
     # convert to HSV
@@ -38,15 +37,15 @@ if __name__ == "__main__":
     s_channel = np.expand_dims(s_channel, axis=-1)
 
     # generate the filter
-    logger.info("Generating SVD filter...")
+    log.info("Generating SVD filter...")
     fourier_pos = svd_filter(s_channel, fps, freq_range=filter_freq_range)
 
     # write to gifs
-    logger.info("Writing to file...")
+    log.info("Writing to file...")
 #   raw_writer = iio.get_writer(str(image_path) + '/demo_raw_video.gif',
 #                               mode='I', fps=fps)
- #   filter_writer = iio.get_writer(str(image_path) + '/demo_dft_filtered_video.gif',
- #                                 mode='I', fps=fps)
+#   filter_writer = iio.get_writer(str(image_path) + '/demo_dft_filtered_video.gif',
+#                                 mode='I', fps=fps)
 #   for i in range(n):
 #        frame = s_channel[i, ...] * fourier_zero
 #       raw_writer.append_data(s_channel[i, ...].astype(np.uint8))

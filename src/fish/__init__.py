@@ -13,5 +13,5 @@ with open(logging_config, 'r') as f:
     config = yaml.safe_load(f.read())
     logging.config.dictConfig(config)
 
-logger = logging.getLogger("std_logger") # gets the root logger by default
-logger.debug("Loaded logging config file: %s" % (logging_config))
+log = logging.getLogger("std_logger") # gets the root logger by default
+log.debug("Loaded logging config file: %s" % (logging_config))

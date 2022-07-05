@@ -1,11 +1,10 @@
-
 from pathlib import Path
 import numpy as np
 import cv2
 import imageio as iio
 import argparse
 
-from fish import REPO_PATH, logger
+from fish import REPO_PATH, log
 from fish.data import prep_exp_data, cap_to_nparray
 from fish.filter.dft import DFTFilter
 from fish.filter.common import IntensityFilter, MeanFilter
@@ -19,43 +18,49 @@ if __name__ == "__main__":
     data_dir = args.data_dir
     file_name = args.file_name
 
-    vid_path, image_path = prep_exp_data(data_dir, file_name,
-                                         '/experiments/dft/outputs/all_ac_video')
+    vid_path, image_path = prep_exp_data(
+        data_dir, file_name, "/experiments/dft/outputs/all_ac_video"
+    )
 
     fps = 10
     filter_freq_range = (1.25, 2.75)
 
-    # create cv video
-    logger.info("Opening video...")
+    log.info("Opening video...")
+
     cap = cv2.VideoCapture(str(vid_path))
 
     # convert to HSV
     video = cap_to_nparray(cap, format="HSV")
+
+    # create cv video
     n, h, w, c = video.shape
     s_channel = video[..., 2].squeeze()
     s_channel = np.expand_dims(s_channel, axis=-1)
 
     # generate background subtraction
-    logger.info("Generating Rolling Average filter...")
+    log.info("Generating Rolling Average filter...")
     m_filter = MeanFilter(s_channel, fps)
-    background_subtracted = m_filter.apply()
+    background_subtracted = m_filter.apply(s_channel, fps)
 
     # generate the DFT filter
-    logger.info("Generating DFT filter...")
+    log.info("Generating DFT filter...")
     dft = DFTFilter(s_channel, fps, freq_range=filter_freq_range)
-    dft_filtered = dft.apply(background_subtracted)
+    dft_filtered = dft.apply(background_subtracted, fps)
 
     # apply intensity filter
-    logger.info("Generating Intensity filter...")
+    log.info("Generating Intensity filter...")
     i_filter = IntensityFilter(dft_filtered, fps, n=500)
-    intensity_filtered = i_filter.apply()
+    intensity_filtered = i_filter.apply(dft_filtered, fps)
 
     # write to gifs
-    logger.info("Writing to file...")
-    videos = [s_channel, dft_filtered,
-              background_subtracted, intensity_filtered]
-    names = ['demo_raw_video.gif', 'demo_dft_filtered_video.gif',
-             'demo_background-subtracted_video.gif', 'demo_instensity-filtered_video.gif']
+    log.info("Writing to file...")
+    videos = [s_channel, dft_filtered, background_subtracted, intensity_filtered]
+    names = [
+        "demo_raw_video.gif",
+        "demo_dft_filtered_video.gif",
+        "demo_background-subtracted_video.gif",
+        "demo_intensity-filtered_video.gif",
+    ]
 
     for video, name in zip(videos, names):
         write_video(video, name, image_path, fps, n)

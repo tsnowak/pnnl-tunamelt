@@ -1,56 +1,75 @@
-
+from re import L
 from typing import Callable, Optional, Tuple
 import numpy as np
+import cv2
 
-from fish import logger
-from fish.utils import Array
+from fish import log
 
 
-class OfflineFilter():
+class OfflineFilter:
+    """
+    Split filter genreration into two stages:
+        Generate: calculates the filter mask from the given video/fps
+        Apply: applies the generated mask to the given video/fps
+    """
 
-    def __init__(self,
-                 video: Array["N,H,W,C", np.uint8],
-                 fps):
+    def __init__(
+        self,
+        video: Optional[np.ndarray] = None,
+        fps: Optional[int] = None,
+    ):
 
         # control video type
-        assert isinstance(video, np.ndarray), \
-            f"Video is not np.ndarray {video.dtype}"
-        self.video = video
+        if video is not None:
+            assert isinstance(
+                video, np.ndarray
+            ), f"Video must be np.ndarray {video.dtype}"
 
         # TODO: ensure fps is not confused w/ period
-        assert fps != 0, \
-            f"fps is zero {fps}"
-        self.fps = fps
+        if fps is not None:
+            assert fps != 0, f"fps can't be zero {fps}"
 
-        logger.debug(f"Input video of shape {video.shape} @ {fps}FPS")
+        self.mask = None
+        if video is not None and fps is not None:
+            self.mask = self.calculate(video, fps)
+            log.debug(
+                f"Mask generated {self.mask.shape} from video of shape {video.shape} @ {fps}FPS"
+            )
 
-    def generate(self,):
-        """ Calculate the mask/filter to apply
+    def calculate(
+        self,
+        video: np.ndarray,
+        fps: int,
+    ):
+        """Calculate the mask/filter to apply"""
+        raise NotImplementedError()
+
+    def filter(self, video: np.ndarray, fps: int):
+        """Calculates (if not already done so) and applies the mask/filter to the given video/frame"""
+        raise NotImplementedError()
+
+
+class OnlineFilter:
+    def __init__(
+        self,
+    ):
+        """
+        Filter has no apriori knowledge of video - is running live and stores current state
+        """
+
+        self.state = None
+
+    def filter(self, frame: np.ndarray, fps: int):
+        """
+        Filters a single frame using the current state and updates the
+        current state of the filter
         """
         raise NotImplementedError()
 
-    def apply(self, video: Optional[Array["N,H,W,C", np.uint8]] = None):
-        """ Applies the mask/filter to the original video or given video/frame
+    def reset_filter(
+        self,
+    ):
+        """
+        Resets the state of the filter
         """
         raise NotImplementedError()
-
-
-'''
-class OnlineFilter():
-
-    def __init__(self,
-                 video_ptr: cv2.VideoReader,
-                 fps: int):
-
-        self.video_pointer = video_ptr
-        self.fps = fps
-
-    def __next__():
-        pass
-
-    def filter(self,):
-        pass
-
-    def load_video(self,):
-        pass
-'''

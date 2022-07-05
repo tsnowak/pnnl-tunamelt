@@ -9,14 +9,13 @@ While our work focuses on improving filtering around underewater turbines, we me
 
 # Prerequisites
 
-While all package dependencies are handled by `poetry`, `conda`, and `PyPi` these managers will need to be installed before hand.
+While all package dependencies are handled by `conda` and `PyPi` these managers will need to be installed before hand.
 
-- [Poetry](https://python-poetry.org/docs/#osx--linux--bashonwindows-install-instructions): Poetry installation instructions.
 - [Miniconda](https://docs.conda.io/en/latest/miniconda.html): Miniconda setup script downloads. Will also contain pip/PyPi.
 
 # Setup
 
-Once `poetry` and `conda` are setup on your machine, you can go ahead and setup the development environment.
+Once `conda` is setup on your machine, you can go ahead and setup the development environment.
 
 ```
 # creates a conda environment for this code
@@ -25,11 +24,7 @@ conda env create -n fish
 # activates the new environment
 conda activate fish
 
-# installs the project dependencies using poetry
-poetry install
-
 # installs the software for this project into the environment
-pip install -e .
 ```
 
 # Intuition
@@ -47,3 +42,48 @@ The fish contained in these `.mp4`s are particularly difficult to see (detect). 
 - fourier transform pixels should be good
 
 -
+
+# Data Types
+
+## Dataset and DataLoader Example
+
+``` python
+# creates an iterator which outputs dataset.aligned_data one at a time when the next(dataloader) function is called
+# aligned_data contains a tuples of (video, label) pairs
+dataloader = DataLoader(Dataset=
+                videos = 'path/to/mp4s',
+                labels = 'path/to/labels'
+            )
+
+# contains aligned video, label pairs
+vid, label = next(dataloader)
+```
+
+## Annotations Structure
+
+``` python
+{'test': [
+    {
+        'filename': '2010-09-08_074500_HF_S002_S001.mp4',
+        'tracks': [
+            {
+                'frames': [
+                    {'box': ((486, 1011), (542, 1062)),
+                    'frame': 16,
+                    'keyframe': 1,
+                    'occluded': 0,
+                    'outside': 0},
+                    {'box': ((455, 1016), (511, 1067)), ...
+                ]
+                'label': 'target',
+                'track_id': 0
+            },
+                'frames': ...
+        ],
+        'video_id': 12,
+        'video_length': 160,
+        'video_shape': {'height': 1792, 'width': 1032}
+    }
+]
+} 
+```

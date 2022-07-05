@@ -1,63 +1,40 @@
-
+import sys
 from pathlib import Path
-import numpy as np
-import cv2
 import imageio as iio
 
-from fish import REPO_PATH, logger
-from fish.data import get_file_path, cap_to_nparray
-from fish.filter.common import mean_filter
+from fish import REPO_PATH, log
+from fish.data import DataLoader
+from fish.filter.common import MeanFilter
 
+# VERIFIED
 
+# create test output directory
+file_path = Path(__file__).absolute()
+out_path = Path(f"{file_path.parent}/outputs/{str(file_path.name).split('.')[0]}")
+out_path.mkdir(parents=True, exist_ok=True)
+
+# test background (mean) filter on test video
 def test_mean_filter():
-    # TODO - modify for generalized usage
-    # load data
-    data_paths = [
-        '/Users/nowa201/Data/fish_detector',
-        '/data/nowa201/Projects/fish_detection/mp4'
-    ]
 
-    name = "2010-09-08_074500_HF_S002_S001"
-    vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
+    # open video with dataloader
+    log.info("Opening video...")
+    dl = DataLoader(
+        f"{REPO_PATH}/data/mp4/2010-09-08_074500_HF_S002_S001.mp4", format="HSV"
+    )
+    dli = iter(dl)
+    vid = next(dli)
 
-    # define place to save outputs
-    image_path = Path(REPO_PATH + '/experiments/dft/outputs')
-    Path(image_path).mkdir(exist_ok=True)
-
+    # set fps and video channel to apply filter to
     fps = 10
-    filter_freq_range = (1.25, 2.75)
+    s_channel = vid[..., 2]
 
-    # create cv video
-    logger.info("Opening video...")
-    cap = cv2.VideoCapture(str(vid_path))
+    # TODO: make this into a list of filters to apply?
+    # generate + apply filter
+    log.info("Generating Rolling Average filter...")
+    filter = MeanFilter()
+    filtered_video = filter.filter(s_channel, fps)
 
-    # convert to HSV
-    video = cap_to_nparray(cap, format="HSV")
-    n, h, w, c = video.shape
-    s_channel = video[..., 2].squeeze()
-    s_channel = np.expand_dims(s_channel, axis=-1)
-
-    # generate the rolling average filter
-    logger.info("Generating Rolling Average filter...")
-    mf_s_channel, mf_filter = mean_filter(s_channel)
-
-    cv2.namedWindow("Mean Filter Video", cv2.WINDOW_AUTOSIZE)
-
-    # show the video until escape is pressed
-    n_frames = mf_s_channel.shape[0]
-    cntr = 0
-    while True:
-        frame = np.concatenate(
-            (s_channel[cntr, ...], mf_s_channel[cntr, ...]), axis=1)
-        cv2.imshow("Mean Filter Video", frame)
-
-        cntr += 1
-        if cntr == n_frames:
-            cntr = 0
-
-        k = cv2.waitKey(int(1000*(1/fps)))
-        if k == 27:
-            cv2.destroyAllWindows()
-            break
-
-    return None
+    # save filtered video under test/filter/outputs/<test_name>/<test_name>.mp4
+    iio.mimwrite(
+        f"{out_path}/{sys._getframe().f_code.co_name}.mp4", filtered_video, fps=fps
+    )

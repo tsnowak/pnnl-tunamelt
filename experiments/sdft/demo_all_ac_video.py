@@ -1,10 +1,9 @@
-
 from pathlib import Path
 import numpy as np
 import cv2
 import imageio as iio
 
-from fish import REPO_PATH, logger
+from fish import REPO_PATH, log
 from fish.data import get_file_path, cap_to_nparray
 from fish.filter.sdft import sdft_filter
 from fish.filter.common import mean_filter, intensity_filter
@@ -14,24 +13,24 @@ if __name__ == "__main__":
     # TODO - modify for generalized usage
     # load data
     data_paths = [
-        '/home/bl33m/Desktop/windowsshare/fish_detection',
-        '/home/bl33m/Desktop/windowsshare/mp4/mp4'
+        "/home/bl33m/Desktop/windowsshare/fish_detection",
+        "/home/bl33m/Desktop/windowsshare/mp4/mp4",
     ]
 
     name = "2010-09-08_074500_HF_S002_S001"
-    #name = "2010-09-08_081500_HF_S021"
-    #name = "2010-09-09_020001_HF_S013"
+    # name = "2010-09-08_081500_HF_S021"
+    # name = "2010-09-09_020001_HF_S013"
     vid_path = get_file_path(f"{name}.mp4", data_paths, absolute=True)
 
     # define place to save outputs
-    image_path = Path(REPO_PATH + '/experiments/sdft/outputs')
+    image_path = Path(REPO_PATH + "/experiments/sdft/outputs")
     Path(image_path).mkdir(exist_ok=True)
 
     fps = 10
     filter_freq_range = (1.25, 2.75)
 
     # create cv video
-    logger.info("Opening video...")
+    log.info("Opening video...")
     cap = cv2.VideoCapture(str(vid_path))
 
     # convert to HSV
@@ -41,12 +40,12 @@ if __name__ == "__main__":
     s_channel = np.expand_dims(s_channel, axis=-1)
 
     # generate the DFT filter
-    logger.info("Generating DFT filter...")
+    log.info("Generating DFT filter...")
     fourier_pos = sdft_filter(s_channel, fps, freq_range=filter_freq_range)
-    fourier_zero = np.abs(fourier_pos - 1.)
+    fourier_zero = np.abs(fourier_pos - 1.0)
 
     # apply the rolling average filter
-    logger.info("Generating Rolling Average filter...")
+    log.info("Generating Rolling Average filter...")
     background_subtracted, avg_filter = mean_filter(s_channel)
 
     # apply the fourier filter
@@ -56,15 +55,19 @@ if __name__ == "__main__":
     intensity_filtered = intensity_filter(dft_filtered)
 
     # write to gifs
-    logger.info("Writing to file...")
-    raw_writer = iio.get_writer(str(image_path) + '/demo_raw_video.gif',
-                                mode='I', fps=fps)
-    dft_writer = iio.get_writer(str(image_path) + '/demo_dft_filtered_video.gif',
-                                mode='I', fps=fps)
-    bgf_writer = iio.get_writer(str(image_path) + '/demo_background-subtracted_video.gif',
-                                mode='I', fps=fps)
-    if_writer = iio.get_writer(str(image_path) + '/demo_intensity-filtered_video.gif',
-                               mode='I', fps=fps)
+    log.info("Writing to file...")
+    raw_writer = iio.get_writer(
+        str(image_path) + "/demo_raw_video.gif", mode="I", fps=fps
+    )
+    dft_writer = iio.get_writer(
+        str(image_path) + "/demo_dft_filtered_video.gif", mode="I", fps=fps
+    )
+    bgf_writer = iio.get_writer(
+        str(image_path) + "/demo_background-subtracted_video.gif", mode="I", fps=fps
+    )
+    if_writer = iio.get_writer(
+        str(image_path) + "/demo_intensity-filtered_video.gif", mode="I", fps=fps
+    )
     for i in range(n):
         raw_writer.append_data(s_channel[i, ...].astype(np.uint8))
         dft_writer.append_data(dft_filtered[i, ...].astype(np.uint8))
