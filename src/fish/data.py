@@ -57,7 +57,8 @@ class Dataset:
     def _align_videos_labels(self):
 
         if self.labels is None:
-            return list(zip(self.videos, [None] * len(self.videos)))
+            # create default split name of "None"
+            return {"None": list(zip(self.videos, [None] * len(self.videos)))}
 
         dataset = {}
         # TODO: inefficiently implemented...
@@ -85,15 +86,20 @@ class DataLoader:
     def __init__(self, dataset, split: str = "train"):
         """Create loader from data and only return split if given"""
         self.dataset = dataset
-        self.split = split
+        # with no labels is no split info
+        if self.dataset.labels is None:
+            self.split = "None"
+        else:
+            self.split = split
+        self.data_split = self.dataset.aligned_data[self.split]
         self._idx = 0
 
     def __len__(self):
-        return len(self.dataset.aligned_data)
+        return len(self.data_split)
 
     def __next__(self):
-        if self._idx < len(self.dataset.aligned_data):
-            v_path, label = self.dataset.aligned_data[self._idx]
+        if self._idx < len(self):
+            v_path, label = self.data_split[self._idx]
             video = to_numpy(v_path)
             self._idx += 1
             return video, label
@@ -168,12 +174,20 @@ def parse_labels(path, label_type: str = "cvat_video-1.1", file_type: str = ".xm
 def parse_cvat_video_11(xml_f):
     xml_dict = xmltodict.parse(xml_f, encoding="utf-8", xml_attribs=True)
     # dict of dicts containing video info
-    videos = xml_dict["annotations"]["meta"]["project"]["tasks"]["task"]
+    try:
+        video = xml_dict["annotations"]["meta"]["task"]
+    except KeyError:
+        videos = xml_dict["annotations"]["meta"]["project"]["tasks"]["task"]
+        videos = {v["id"]: v for v in videos}
+        raise TypeError(
+            "Project-wide annotations.xml file is being used. Label frames are incorrect in this file. Download annotations per task!"
+        )
+
     # dict of dicts containing each label/annotation info
     labels = xml_dict["annotations"]["track"]
-
-    # organize videos for usage in label loop
-    videos = {v["id"]: v for v in videos}
+    video_id = int(video["id"])
+    # create data splits and store associated video ids
+    split = video["subset"].lower()
 
     # loop through labels and videos once each
     # and compose dictionary datastructures on the fly
@@ -199,7 +213,6 @@ def parse_cvat_video_11(xml_f):
                 # Not sure why a type error is being thrown on frame: int(frame['@frame']) on the last iter
                 pass
         # create per object tracks
-        video_id = int(l["@task_id"])
         track_id = int(l["@id"])
         track = {"track_id": track_id, "label": l["@label"], "frames": frames}
         # append to per video tracks
@@ -207,8 +220,6 @@ def parse_cvat_video_11(xml_f):
             tracks[video_id].append(track)
         except KeyError:
             tracks[video_id] = [track]
-        # create data splits and store associated video ids
-        split = l["@subset"].lower()
         try:
             datasets[split].add(video_id)
         except KeyError:
@@ -220,8 +231,8 @@ def parse_cvat_video_11(xml_f):
         for vid in value:
             video_id = vid
             video_tracks = tracks[vid]
-            v = videos[str(vid)]
-            video = {
+            v = video[str(vid)]
+            this_video = {
                 "video_id": vid,
                 "filename": v["name"],
                 "video_length": int(v["size"]),
@@ -231,7 +242,7 @@ def parse_cvat_video_11(xml_f):
                 },
                 "tracks": video_tracks,
             }
-            dataset[key].append(video)
+            dataset[key].append(this_video)
 
     return dataset
 

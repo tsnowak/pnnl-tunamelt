@@ -51,11 +51,17 @@ class DFTFilter(OfflineFilter):
         else:
             log.debug(f"Generated {self.__class__} filter mask.")
 
+        self.fps = fps
+
     def filter(
         self,
         video: np.ndarray,
-        fps: int,
+        fps: Optional[int] = None,
     ):
+        if fps is None:
+            if self.fps is None:
+                raise ValueError("fps must be given if filter.fps is not set.")
+            fps = self.fps
 
         if self.mask is None:
             self.calculate(video, fps)

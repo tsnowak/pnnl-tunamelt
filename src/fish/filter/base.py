@@ -59,7 +59,7 @@ class OnlineFilter:
 
         self.state = None
 
-    def filter(self, frame: np.ndarray, fps: int):
+    def filter(self, frame: np.ndarray, fps: Optional[int]):
         """
         Filters a single frame using the current state and updates the
         current state of the filter
