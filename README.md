@@ -34,10 +34,11 @@ conda env update --file env.yml
 
 ## Data directory symlink
 
-While not necessary, the tests in the `test` directory rely on data being stored in a `data` directory at the project level. To do so I created a symlink to where data is stored on my machine.
+While not necessary, the tests in the `test` and the jupyter noteboks in the `notebooks` directory rely on data being stored in a `data` directory at the project level and notebooks level respectively. To do so I created a symlink to where data is stored on my machine.
 
 ``` bash
 ln -s <path/to/my/data> ./data
+ln -s <path/to/my/data> ./notebooks/data
 ```
 
 # Data Structure and Labels
