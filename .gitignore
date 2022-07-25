@@ -1,6 +1,7 @@
 .virtual_documents
 .vscode/
-**/data/
+data/
+notebooks/data/
 **/log/
 **/outputs/
 *.swp
