@@ -2,7 +2,7 @@ import os
 import argparse
 from pathlib import Path
 
-from fish import REPO_PATH
+from turbx import REPO_PATH
 
 """
 Used to unzip and rename the per-video labels downloaded

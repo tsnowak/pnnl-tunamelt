@@ -9,8 +9,8 @@ import numpy as np
 from scipy.fft import fft, fftfreq, fftshift
 import matplotlib.pyplot as plt
 from river import utils
-from fish import log
-from fish.utils import Array
+from turbx import log
+from turbx.utils import Array
 
 
 def sdft_filter(

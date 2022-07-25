@@ -1,7 +1,7 @@
 
 import numpy as np
-from fish.utils import generate_sinusoid_tile
-from fish.vis import plot_time_domain_waveform
+from turbx.utils import generate_sinusoid_tile
+from turbx.vis import plot_time_domain_waveform
 
 
 def test_plot_time_domain_waveform():

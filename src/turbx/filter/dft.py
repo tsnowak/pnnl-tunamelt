@@ -4,8 +4,8 @@ Implementation of DFT used to mask pixels exhibiting certain frequencies
 from typing import Optional, Tuple
 
 import numpy as np
-from fish import log
-from fish.filter.base import OfflineFilter
+from turbx import log
+from turbx.filter.base import OfflineFilter
 from scipy.fft import fft, fftfreq, fftshift
 
 

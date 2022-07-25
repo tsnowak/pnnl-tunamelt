@@ -1,9 +1,9 @@
 import numpy as np
 import cv2
 
-from fish import log
-from fish.filter.sdft import sdft_filter
-from fish.utils import generate_sinusoid_tile
+from turbx import log
+from turbx.filter.sdft import sdft_filter
+from turbx.utils import generate_sinusoid_tile
 
 
 def test_filter_frequency():

@@ -2,11 +2,11 @@ from pathlib import Path
 import numpy as np
 import cv2
 
-from fish import REPO_PATH, log
-from fish.data import prep_exp_data, cap_to_nparray
-from fish.filter.common import MeanFilter
-from fish.utils import standard_parser
-from fish.vis import write_video
+from turbx import REPO_PATH, log
+from turbx.data import prep_exp_data, cap_to_nparray
+from turbx.filter.common import MeanFilter
+from turbx.utils import standard_parser
+from turbx.vis import write_video
 
 args = standard_parser()
 

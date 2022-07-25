@@ -16,9 +16,9 @@ import numpy as np
 import imageio as iio
 from skimage import img_as_ubyte
 
-from fish import REPO_PATH
-from fish.utils import generate_sinusoid_tile
-from fish.filter.dft import dft_filter
+from turbx import REPO_PATH
+from turbx.utils import generate_sinusoid_tile
+from turbx.filter.dft import dft_filter
 
 
 def main():

@@ -1,10 +1,9 @@
-
 from setuptools import setup
 
 setup(
-    name="fish",
+    name="turbx",
     version="0.1",
     author="Theodore Nowak",
-    package_dir={'': 'src'},
-    packages=['fish'],
+    package_dir={"": "src"},
+    packages=["turbx"],
 )

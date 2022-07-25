@@ -3,11 +3,11 @@ import numpy as np
 import cv2
 import imageio as iio
 
-from fish import REPO_PATH, log
-from fish.data import prep_exp_data, cap_to_nparray
-from fish.filter.dft import DFTFilter
-from fish.utils import standard_parser
-from fish.vis import write_video
+from turbx import REPO_PATH, log
+from turbx.data import prep_exp_data, cap_to_nparray
+from turbx.filter.dft import DFTFilter
+from turbx.utils import standard_parser
+from turbx.vis import write_video
 
 args = standard_parser()
 

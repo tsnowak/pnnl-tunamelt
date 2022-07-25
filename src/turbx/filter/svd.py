@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 
 import cv2
 
-from fish import log
-from fish.utils import Array
+from turbx import log
+from turbx.utils import Array
 
 
 def svd_filter(

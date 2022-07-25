@@ -3,9 +3,9 @@ import numpy as np
 import cv2
 import imageio as iio
 
-from fish import REPO_PATH, log
-from fish.data import get_file_path, cap_to_nparray
-from fish.filter.svd import svd_filter
+from turbx import REPO_PATH, log
+from turbx.data import get_file_path, cap_to_nparray
+from turbx.filter.svd import svd_filter
 
 if __name__ == "__main__":
 

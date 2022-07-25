@@ -3,10 +3,10 @@ import numpy as np
 import cv2
 import imageio as iio
 
-from fish import REPO_PATH, log
-from fish.data import get_file_path, cap_to_nparray
-from fish.filter.piv import piv_filter
-from fish.filter.common import mean_filter, intensity_filter
+from turbx import REPO_PATH, log
+from turbx.data import get_file_path, cap_to_nparray
+from turbx.filter.piv import piv_filter
+from turbx.filter.common import mean_filter, intensity_filter
 
 if __name__ == "__main__":
 

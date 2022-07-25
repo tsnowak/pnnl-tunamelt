@@ -2,8 +2,8 @@ from pathlib import Path
 import numpy as np
 import cv2
 
-from fish import REPO_PATH, log
-from fish.data import DataLoader
+from turbx import REPO_PATH, log
+from turbx.data import DataLoader
 
 
 def main():

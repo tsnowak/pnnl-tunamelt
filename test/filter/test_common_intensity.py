@@ -4,10 +4,10 @@ import numpy as np
 import cv2
 import imageio as iio
 
-from fish import REPO_PATH, log
-from fish.data import DataLoader
-from fish.filter.dft import DFTFilter
-from fish.filter.common import IntensityFilter, MeanFilter
+from turbx import REPO_PATH, log
+from turbx.data import DataLoader
+from turbx.filter.dft import DFTFilter
+from turbx.filter.common import IntensityFilter, MeanFilter
 
 # create test output directory
 file_path = Path(__file__).absolute()

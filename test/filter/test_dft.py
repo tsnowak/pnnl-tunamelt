@@ -1,8 +1,8 @@
 import numpy as np
 
-from fish import log
-from fish.filter.dft import DFTFilter
-from fish.utils import generate_sinusoid_tile
+from turbx import log
+from turbx.filter.dft import DFTFilter
+from turbx.utils import generate_sinusoid_tile
 
 
 def test_filter_frequency():

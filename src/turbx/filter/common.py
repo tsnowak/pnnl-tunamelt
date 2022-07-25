@@ -9,8 +9,8 @@ from skimage.restoration import denoise_wavelet
 from sklearn.preprocessing import normalize
 from scipy.fft import fft, fftn, fftfreq, fftshift
 
-from fish import log
-from fish.filter.base import OfflineFilter
+from turbx import log
+from turbx.filter.base import OfflineFilter
 
 
 class MeanFilter(OfflineFilter):

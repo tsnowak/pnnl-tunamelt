@@ -17,14 +17,15 @@ While all package dependencies are handled by `conda` and `PyPi` these managers 
 
 Once `conda` is setup on your machine, you can go ahead and setup the development environment.
 
-```
+``` bash
 # creates a conda environment for this code
-conda env create -n fish
+conda create -n turbx python=3.9
 
 # activates the new environment
-conda activate fish
+conda activate turbx
 
 # installs the software for this project into the environment
+conda env update --file env.yml
 ```
 
 # Data Types

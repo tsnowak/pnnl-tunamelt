@@ -2,9 +2,9 @@ import sys
 from pathlib import Path
 import imageio as iio
 
-from fish import REPO_PATH, log
-from fish.data import DataLoader
-from fish.filter.common import MeanFilter
+from turbx import REPO_PATH, log
+from turbx.data import DataLoader
+from turbx.filter.common import MeanFilter
 
 # VERIFIED
 

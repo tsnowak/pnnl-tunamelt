@@ -8,7 +8,7 @@ from pprint import pprint
 import cv2
 import numpy as np
 
-from fish import REPO_PATH, log
+from turbx import REPO_PATH, log
 
 VALID_LABEL_TYPES = ["cvat_video-1.1"]
 
@@ -55,6 +55,10 @@ class Dataset:
         self.video_format = video_format
 
     def _align_videos_labels(self):
+        """
+        Returns:
+            {<split>: [(<video path>, <video info and tracks>)]}
+        """
 
         if self.labels is None:
             # create default split name of "None"
@@ -63,18 +67,18 @@ class Dataset:
         dataset = {}
         # TODO: inefficiently implemented...
         for split, data in self.labels.items():
-            for video in data:
-                # find video file path in labeled videos
-                match = None
+            for label in data:
+                # find label file path in labeled videos
+                video = None
                 for v in self.videos:
-                    if v.name == video["filename"]:
-                        match = v
+                    if v.name == label["filename"]:
+                        video = v
                         break
-                if match is not None:
+                if video is not None:
                     try:
-                        dataset[split].append((match, video))
+                        dataset[split].append((video, label))
                     except KeyError:
-                        dataset[split] = [(match, video)]
+                        dataset[split] = [(video, label)]
         return dataset
 
 
@@ -108,7 +112,12 @@ class DataLoader:
 
 
 def find_files(path, file_type=".mp4"):
-    """Accepts lazy file path inputs and discovers all relevant files"""
+    """
+    Accepts lazy file path inputs and discovers all relevant files
+
+    Returns:
+        [<file paths>]
+    """
     o_path = []
 
     if not isinstance(path, list):
@@ -134,6 +143,9 @@ def parse_labels(path, label_type: str = "cvat_video-1.1", file_type: str = ".xm
     Accepts a path to a label file or directory of label files,
     parses each file into dicts/lists, and combines separate label,
     files, into a single large label dataset
+
+    Returns:
+        {<splits>: [<video info and tracks]}
     """
     assert (
         label_type in VALID_LABEL_TYPES
@@ -172,6 +184,9 @@ def parse_labels(path, label_type: str = "cvat_video-1.1", file_type: str = ".xm
 
 
 def parse_cvat_video_11(xml_f):
+    """
+    Returns {<split>: [<video info and tracks>]}
+    """
     xml_dict = xmltodict.parse(xml_f, encoding="utf-8", xml_attribs=True)
     # dict of dicts containing video info
     try:
@@ -184,15 +199,31 @@ def parse_cvat_video_11(xml_f):
         )
 
     # dict of dicts containing each label/annotation info
-    labels = xml_dict["annotations"]["track"]
+    try:
+        labels = xml_dict["annotations"]["track"]
+        # handle single track videos
+        labels = [labels] if not isinstance(labels, list) else labels
+    except KeyError:
+        # no tracks case
+        labels = []
+
     video_id = int(video["id"])
     # create data splits and store associated video ids
     split = video["subset"].lower()
 
+    output = {
+        "video_id": video_id,
+        "filename": video["name"],
+        "video_length": int(video["size"]),
+        "video_shape": {
+            "height": int(video["original_size"]["height"]),
+            "width": int(video["original_size"]["width"]),
+        },
+    }
+
     # loop through labels and videos once each
     # and compose dictionary datastructures on the fly
-    datasets = {}
-    tracks = {}
+    tracks = []
     for l in labels:
         # clean and reorder individual frame labels
         frames = []
@@ -215,34 +246,10 @@ def parse_cvat_video_11(xml_f):
         # create per object tracks
         track_id = int(l["@id"])
         track = {"track_id": track_id, "label": l["@label"], "frames": frames}
-        # append to per video tracks
-        try:
-            tracks[video_id].append(track)
-        except KeyError:
-            tracks[video_id] = [track]
-        try:
-            datasets[split].add(video_id)
-        except KeyError:
-            datasets[split] = set([video_id])
+        tracks.append(track)
 
-    # iterate over data splits and video ids to create final dataset
-    dataset = {k: [] for k, _ in datasets.items()}
-    for key, value in datasets.items():
-        for vid in value:
-            video_id = vid
-            video_tracks = tracks[vid]
-            v = video[str(vid)]
-            this_video = {
-                "video_id": vid,
-                "filename": v["name"],
-                "video_length": int(v["size"]),
-                "video_shape": {
-                    "height": int(v["original_size"]["height"]),
-                    "width": int(v["original_size"]["width"]),
-                },
-                "tracks": video_tracks,
-            }
-            dataset[key].append(this_video)
+    output.update({"tracks": tracks})
+    dataset = {split: [output]}
 
     return dataset
 

@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from scipy.fft import fft, fftfreq, fftn, fftshift
 
-from fish import log
+from turbx import log
 
 Shape = TypeVar("Shape")
 DType = TypeVar("DType")

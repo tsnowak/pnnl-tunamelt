@@ -8,7 +8,7 @@ from IPython.core.display import HTML
 from matplotlib import pyplot as plt
 from scipy.fft import fft, fftfreq, fftn, fftshift
 
-from fish import log
+from turbx import log
 
 
 def show_gif(f_path, img_width=100):
