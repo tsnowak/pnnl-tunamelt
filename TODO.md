@@ -1,3 +1,6 @@
 # TODOs
 
-- rename project to "fish" in order to align conda, poetry, package, and repo names
+- create metrics for comparing filter output to labels
+- create standard viz from dataloader
+- viz data and labels to verify integrity
+- improve/test additional filters
