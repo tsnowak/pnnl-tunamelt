@@ -54,9 +54,7 @@ class DFTFilter(OfflineFilter):
         self.fps = fps
 
     def filter(
-        self,
-        video: np.ndarray,
-        fps: Optional[int] = None,
+        self, video: np.ndarray, fps: Optional[int] = None,
     ):
         if fps is None:
             if self.fps is None:
@@ -80,18 +78,14 @@ class DFTFilter(OfflineFilter):
 
         return out
 
-    def calculate(
-        self,
-        video: np.ndarray,
-        fps: int,
-    ) -> np.ndarray:
+    def calculate(self, video: np.ndarray, fps: int,) -> np.ndarray:
 
         video = video.astype(np.float32)
         # take the fft of the video
         video_fft = fft(video, axis=0, workers=-1)
         video_fft = fftshift(video_fft, axes=0)  # 0 freq at center
         # For each component get the frequency center that it represents
-        freq_bins = fftfreq(video.shape[0], d=1 / fps)
+        freq_bins = fftfreq(video.shape[0], d=(1.0 / fps))
         freq_bins = fftshift(freq_bins)
         log.debug(f"FFT'd Video shape {video_fft.shape}")
 
