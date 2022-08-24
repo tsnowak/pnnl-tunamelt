@@ -3,7 +3,7 @@ import numpy as np
 import cv2
 
 from turbx import REPO_PATH, log
-from turbx.data import DataLoader, Dataset
+from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
 from turbx.utils import standard_parser
 from turbx.vis import view
@@ -27,6 +27,9 @@ if __name__ == "__main__":
     video, label = next(dataloader)
     filter.calculate(video, fps)
     out = filter.filter(video)
+
+    video = numpy_to_cv2(video, "HSV", "BGR")
+    out = numpy_to_cv2(out, "HSV", "RGB")
 
     print("Displaying output...")
     view({"original": video, "mean_filtered": out}, fps)

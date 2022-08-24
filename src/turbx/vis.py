@@ -3,7 +3,6 @@ from typing import List, Tuple, Union, Dict
 
 import base64
 import asyncio
-from quart import Quart, websocket
 import cv2
 import imageio as iio
 import numpy as np
@@ -16,10 +15,10 @@ from turbx import log
 
 def view(videos: Dict, fps, loop=True, save=True):
     """
-        open well-spaced video panes and show
-        sync frame index across videos
-        offline and online - show after filter is calculated
-        - assume video is 3D numpy tensor
+    open well-spaced video panes and show
+    sync frame index across videos
+    offline and online - show after filter is calculated
+    - assume video is 3D numpy tensor
     """
     assert len(videos) != 0, "No videos given. Exiting."
 
@@ -47,21 +46,6 @@ def view(videos: Dict, fps, loop=True, save=True):
 
     # cleanly destroy
     cv2.destroyAllWindows()
-
-
-async def send_videos(original, filtered, frame_delay):
-    idx = 0
-    length = original.shape()[0]
-    while True:
-        await asyncio.sleep(frame_delay)
-        if idx == length - 1:
-            idx = 0
-        oframe = original[idx, ...]
-        fframe = filtered[idx, ...]
-        await websocket.send(
-            f"original:image/jpeg;base64, {base64.b64encode(oframe).decode()}\n\
-            filtered:image/jpeg;base64, {base64.b64encode(fframe).decode()}"
-        )
 
 
 class VideoStream(object):

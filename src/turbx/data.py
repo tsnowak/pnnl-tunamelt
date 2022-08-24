@@ -1,7 +1,7 @@
 from doctest import UnexpectedException
 import sys
 from pathlib import Path
-from typing import Union
+from typing import Union, List
 import xmltodict
 from pprint import pprint
 
@@ -252,6 +252,24 @@ def parse_cvat_video_11(xml_f):
     dataset = {split: [output]}
 
     return dataset
+
+
+def numpy_to_cv2(videos: Union[List, np.ndarray], input_format, output_format):
+
+    if not isinstance(videos, list):
+        videos = [videos]
+
+    for idx, video in enumerate(videos):
+        for i in range(video.shape[0]):
+            frame = video[i, ...]
+            color_cmd = eval(f"cv2.COLOR_{input_format}2{output_format}")
+            video[i, ...] = cv2.cvtColor(frame, color_cmd)
+        videos[idx] = video
+
+    if len(videos) == 1:
+        return videos[0]
+    else:
+        return videos
 
 
 def to_numpy(path, video_format="HSV"):
