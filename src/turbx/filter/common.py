@@ -15,9 +15,7 @@ from turbx.filter.base import OfflineFilter
 
 class MeanFilter(OfflineFilter):
     def __init__(
-        self,
-        video: Optional[np.ndarray] = None,
-        fps: Optional[int] = None,
+        self, video: Optional[np.ndarray] = None, fps: Optional[int] = None,
     ):
         """
         Removes static background by zeroing pixels in frames which .
@@ -30,11 +28,10 @@ class MeanFilter(OfflineFilter):
             log.debug(f"Did not generate {self.__class__} filter.")
         else:
             log.debug(f"Generated {self.__class__} filter mask.")
+        self.fps = fps
 
     def filter(
-        self,
-        video: np.ndarray,
-        fps: int,
+        self, video: np.ndarray, fps: Optional[int] = None,
     ):
         """
         Applies the mask to filter the video
@@ -42,6 +39,11 @@ class MeanFilter(OfflineFilter):
             - video: video to filter - np.array [N, H, W, C]
             - fps: fps of video - int
         """
+        if fps is None:
+            if self.fps is None:
+                raise ValueError("fps not given.")
+            fps = self.fps
+
         if self.mask is None:
             self.calculate(video, fps)
         video = video.astype(np.float32)
@@ -51,9 +53,7 @@ class MeanFilter(OfflineFilter):
         return filtered_video
 
     def calculate(
-        self,
-        video: np.ndarray,
-        fps: int,
+        self, video: np.ndarray, fps: int,
     ):
         """
         Calculates the filter mask
@@ -61,6 +61,7 @@ class MeanFilter(OfflineFilter):
             - video: video to filter - np.array [N, H, W, C]
             - fps: fps of video - int
         """
+        self.fps = fps
         video = video.astype(np.float32)
         # calculate background
         mean = np.mean(video, axis=0)
@@ -90,12 +91,15 @@ class IntensityFilter(OfflineFilter):
             log.debug(f"Did not generate {self.__class__} filter.")
         else:
             log.debug(f"Generated {self.__class__} filter mask.")
+        self.fps = fps
 
     def filter(
-        self,
-        video: np.ndarray,
-        fps: int,
+        self, video: np.ndarray, fps: Optional[int] = None,
     ):
+        if fps is None:
+            if self.fps is None:
+                raise ValueError("fps not given.")
+            fps = self.fps
 
         video = video.astype(np.float32)
         out = np.multiply(video, self.mask)
@@ -104,10 +108,9 @@ class IntensityFilter(OfflineFilter):
         return out
 
     def calculate(
-        self,
-        video: np.ndarray,
-        fps: int,
+        self, video: np.ndarray, fps: int,
     ):
+        self.fps = fps
         video = video.astype(np.float32)
         std_val = np.max(np.std(video, axis=0))
         max_val = np.max(video, axis=0)
@@ -144,9 +147,7 @@ class SimpleObjectTracking(OfflineFilter):
     """
 
     def __init__(
-        self,
-        video: Optional[np.ndarray] = None,
-        fps: Optional[int] = None,
+        self, video: Optional[np.ndarray] = None, fps: Optional[int] = None,
     ):
 
         # Meaning of the state vector
@@ -193,18 +194,14 @@ class SimpleObjectTracking(OfflineFilter):
         # covariance of uncertainty in the observation being what is measured
         kalman.measurementNoiseCov = np.identity(n=state_size, dtype=np.float32) * 0.03
 
-    def object_check(
-        self,
-    ):
+    def object_check(self,):
         """
         if not seen in CNTR, is not object
         """
         pass
 
     def apply(
-        self,
-        video: np.ndarray,
-        fps: int,
+        self, video: np.ndarray, fps: int,
     ):
 
         video = video.astype(np.float32)
@@ -214,9 +211,7 @@ class SimpleObjectTracking(OfflineFilter):
     def detect_contours(self, frame):
         pass
 
-    def initialize_kf(
-        self,
-    ):
+    def initialize_kf(self,):
         pass
 
     def update_kf(self, kf, detections):

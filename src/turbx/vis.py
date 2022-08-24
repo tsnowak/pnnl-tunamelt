@@ -1,6 +1,9 @@
 from pathlib import Path
-from typing import List, Tuple
+from typing import List, Tuple, Union, Dict
 
+import base64
+import asyncio
+from quart import Quart, websocket
 import cv2
 import imageio as iio
 import numpy as np
@@ -9,6 +12,90 @@ from matplotlib import pyplot as plt
 from scipy.fft import fft, fftfreq, fftn, fftshift
 
 from turbx import log
+
+
+def view(videos: Dict, fps, loop=True, save=True):
+    """
+        open well-spaced video panes and show
+        sync frame index across videos
+        offline and online - show after filter is calculated
+        - assume video is 3D numpy tensor
+    """
+    assert len(videos) != 0, "No videos given. Exiting."
+
+    for name, v in videos.items():
+        length = v.shape[0]
+        cv2.namedWindow(f"{name}")
+
+    interval = int(1000 / fps)
+    frame = 0
+    # loop over videos
+    while True:
+
+        # update frame per pane
+        for name, v in videos.items():
+            cv2.imshow(f"{name}", v[frame])
+
+        # exit on key press
+        if cv2.waitKey(interval) & 0xFF == ord("q"):
+            break
+
+        # loop
+        frame += 1
+        if frame == length:
+            frame = 0
+
+    # cleanly destroy
+    cv2.destroyAllWindows()
+
+
+async def send_videos(original, filtered, frame_delay):
+    idx = 0
+    length = original.shape()[0]
+    while True:
+        await asyncio.sleep(frame_delay)
+        if idx == length - 1:
+            idx = 0
+        oframe = original[idx, ...]
+        fframe = filtered[idx, ...]
+        await websocket.send(
+            f"original:image/jpeg;base64, {base64.b64encode(oframe).decode()}\n\
+            filtered:image/jpeg;base64, {base64.b64encode(fframe).decode()}"
+        )
+
+
+class VideoStream(object):
+    def __init__(self, video_path):
+        self.video = cv2.VideoCapture(video_path)
+        self.max_idx = self.video.get(cv2.CAP_PROP_FRAME_COUNT) - 1
+        self.idx = self.video.get(cv2.CAP_PROP_POS_FRAMES)
+
+    def __del__(self):
+        self.video.release()
+
+    def get_frame(self, labels=None):
+
+        # loop video
+        self.idx = self.video.get(cv2.CAP_PROP_POS_FRAMES)
+        if self.idx == self.max_idx:
+            self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+        # return byte-encoded image
+        success, image = self.video.read()
+        if success:
+            cv2.putText(
+                img=image,
+                text=f"{int(self.idx)}/{int(self.max_idx)}",
+                org=(10, 50),
+                fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+                fontScale=1,
+                color=(0, 255, 0),
+                thickness=1,
+            )
+            _, jpeg = cv2.imencode(".jpg", image)
+            return jpeg.tobytes()
+        else:
+            raise IOError("Failed to retrieve video frame.")
 
 
 def show_gif(f_path, img_width=100):
