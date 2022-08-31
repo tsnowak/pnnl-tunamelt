@@ -73,6 +73,7 @@ def view(
     assert len(videos) != 0, "No videos given. Exiting."
 
     # launch separate processes to save videos
+    # TODO: add annotations to saved videos
     if save:
         procs = []
         procs = len(videos) if len(videos) < psutil.cpu_count() else psutil.cpu_count()
@@ -98,9 +99,10 @@ def view(
         for name, v in videos.items():
             # TODO: draw per frame labels and predictions
             anno = v[frame]
-            for box in pred[frame]:
-                box = xywh_to_xyxy(box)
-                anno = cv2.rectangle(anno, box[0], box[1], (0, 0, 255), 4)
+            if len(pred) > 0:
+                for box in pred[frame]:
+                    box = xywh_to_xyxy(box)
+                    anno = cv2.rectangle(anno, box[0], box[1], (0, 0, 255), 4)
             cv2.imshow(f"{name}", anno)
 
         # exit on key press

@@ -121,7 +121,8 @@ class IntensityFilter(OfflineFilter):
         fps: int,
     ):
         self.fps = fps
-        video = video.astype(np.float32)
+        # video = video.astype(np.float32)
+        video = video.astype(np.float16)
         std_val = np.max(np.std(video, axis=0))
         max_val = np.max(video, axis=0)
 
@@ -151,7 +152,7 @@ class ContourFilter:
         self,
         video: Optional[np.ndarray] = None,
         min_area: int = 150,
-        max_area: int = 500,
+        max_area: int = 1000,
     ):
         """
         Detect contours of a certain size
@@ -163,7 +164,6 @@ class ContourFilter:
         self,
         video: np.ndarray,
     ):
-        # ret, thresh = cv2.threshold(frame, 175, 255, cv2.THRESH_BINARY)
         return self.calculate(video)
 
     def calculate(

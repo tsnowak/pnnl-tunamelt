@@ -10,6 +10,8 @@
     Author: Theodore Nowak
 """
 
+# TODO: refactor!
+
 from pathlib import Path
 import numpy as np
 import imageio as iio

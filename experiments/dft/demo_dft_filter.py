@@ -1,7 +1,7 @@
 from pathlib import Path
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
-from turbx.filter import common
+from turbx.filter import common, dft
 from turbx.vis import view
 
 # args = standard_parser()
@@ -18,19 +18,25 @@ if __name__ == "__main__":
     frame_delay = 1.0 / fps
 
     mean_filter = common.MeanFilter(fps=fps)
+    turbine_filter = dft.DFTFilter(fps=fps)
     intensity_filter = common.IntensityFilter(fps=fps)
+    contour_filter = common.ContourFilter()
 
     # get video, label
     video, label = dataloader[0]
     log.info("Calculating filter...")
     # mean filter
     mean = mean_filter.filter(video)
+    # turbine filter
+    turbine = turbine_filter.filter(mean)
     # intensity filter
-    intensity = intensity_filter.filter(mean)
+    intensity = intensity_filter.filter(turbine)
     # contour filter
+    pred = contour_filter.filter(intensity)
 
     video = numpy_to_cv2(video, "HSV", "BGR")
     mean = numpy_to_cv2(mean, "HSV", "RGB")
+    turbine = numpy_to_cv2(turbine, "HSV", "RGB")
     intensity = numpy_to_cv2(intensity, "HSV", "RGB")
 
     log.info("Displaying output...")
@@ -38,10 +44,11 @@ if __name__ == "__main__":
         {
             "original": video,
             "mean_filtered": mean,
+            "turbine_filtered": turbine,
             "intensity_filtered": intensity,
         },
         label,
-        [],  # placeholder for predictions output
+        pred,  # placeholder for predictions output
         fps,
         save=False,
         out_path=Path(),

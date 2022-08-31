@@ -1,11 +1,7 @@
 from pathlib import Path
-import numpy as np
-import cv2
-
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
-from turbx.filter import common, dft
-from turbx.utils import standard_parser
+from turbx.filter import common
 from turbx.vis import view
 
 # args = standard_parser()
@@ -24,19 +20,22 @@ if __name__ == "__main__":
     filter = common.MeanFilter(fps=fps)
 
     log.info("Calculating filter...")
-    video, label = next(dataloader)
-    filter.calculate(video, fps)
-    out = filter.filter(video)
+    video, label = dataloader[0]
+    mean = filter.filter(video)
 
     video = numpy_to_cv2(video, "HSV", "BGR")
-    out = numpy_to_cv2(out, "HSV", "RGB")
+    mean = numpy_to_cv2(mean, "HSV", "RGB")
 
     log.info("Displaying output...")
     view(
-        {"original": video, "mean_filtered": out},
+        {
+            "original": video,
+            "mean_filtered": mean,
+        },
         label,
-        label,  # placeholder for predictions output
+        [],  # placeholder for predictions output
         fps,
+        save=False,
         out_path=Path(),
         video_type=".gif",
     )

@@ -1,12 +1,8 @@
 from pathlib import Path
-import numpy as np
-import cv2
-from pprint import pprint
 
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
-from turbx.utils import standard_parser
 from turbx.vis import view
 
 # args = standard_parser()
@@ -28,20 +24,17 @@ if __name__ == "__main__":
     contour_filter = common.ContourFilter()
 
     # get video, label
-    video, label = dataloader[19]
+    video, label = dataloader[0]
     log.info("Calculating filter...")
     # mean filter
     mean = mean_filter.filter(video)
-    # turbine filter
-    turbine = turbine_filter.filter(mean)
     # intensity filter
-    intensity = intensity_filter.filter(turbine)
+    intensity = intensity_filter.filter(mean)
     # contour filter
     pred = contour_filter.filter(intensity)
 
     video = numpy_to_cv2(video, "HSV", "BGR")
     mean = numpy_to_cv2(mean, "HSV", "RGB")
-    turbine = numpy_to_cv2(turbine, "HSV", "RGB")
     intensity = numpy_to_cv2(intensity, "HSV", "RGB")
 
     log.info("Displaying output...")
@@ -49,7 +42,6 @@ if __name__ == "__main__":
         {
             "original": video,
             "mean_filtered": mean,
-            "turbine_filtered": turbine,
             "intensity_filtered": intensity,
         },
         label,

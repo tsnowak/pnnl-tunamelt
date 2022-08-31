@@ -66,3 +66,8 @@ Structure of `preds` at the output of filtering pipeline
     ]
 }
 ```
+
+# Video Notes
+
+0: Easy
+18: Hard, Small Fish
