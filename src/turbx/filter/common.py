@@ -15,7 +15,9 @@ from turbx.filter.base import OfflineFilter
 
 class MeanFilter(OfflineFilter):
     def __init__(
-        self, video: Optional[np.ndarray] = None, fps: Optional[int] = None,
+        self,
+        video: Optional[np.ndarray] = None,
+        fps: Optional[int] = None,
     ):
         """
         Removes static background by zeroing pixels in frames which .
@@ -31,7 +33,9 @@ class MeanFilter(OfflineFilter):
         self.fps = fps
 
     def filter(
-        self, video: np.ndarray, fps: Optional[int] = None,
+        self,
+        video: np.ndarray,
+        fps: Optional[int] = None,
     ):
         """
         Applies the mask to filter the video
@@ -44,8 +48,7 @@ class MeanFilter(OfflineFilter):
                 raise ValueError("fps not given.")
             fps = self.fps
 
-        if self.mask is None:
-            self.calculate(video, fps)
+        self.calculate(video, fps)
         video = video.astype(np.float32)
         filtered_video = np.multiply(video, self.mask)
         filtered_video = filtered_video.astype(np.uint8)
@@ -53,7 +56,9 @@ class MeanFilter(OfflineFilter):
         return filtered_video
 
     def calculate(
-        self, video: np.ndarray, fps: int,
+        self,
+        video: np.ndarray,
+        fps: int,
     ):
         """
         Calculates the filter mask
@@ -94,12 +99,15 @@ class IntensityFilter(OfflineFilter):
         self.fps = fps
 
     def filter(
-        self, video: np.ndarray, fps: Optional[int] = None,
+        self,
+        video: np.ndarray,
+        fps: Optional[int] = None,
     ):
         if fps is None:
             if self.fps is None:
                 raise ValueError("fps not given.")
             fps = self.fps
+        self.mask = self.calculate(video, fps)
 
         video = video.astype(np.float32)
         out = np.multiply(video, self.mask)
@@ -108,7 +116,9 @@ class IntensityFilter(OfflineFilter):
         return out
 
     def calculate(
-        self, video: np.ndarray, fps: int,
+        self,
+        video: np.ndarray,
+        fps: int,
     ):
         self.fps = fps
         video = video.astype(np.float32)
@@ -136,6 +146,54 @@ class IntensityFilter(OfflineFilter):
         return mask
 
 
+class ContourFilter:
+    def __init__(
+        self,
+        video: Optional[np.ndarray] = None,
+        min_area: int = 150,
+        max_area: int = 500,
+    ):
+        """
+        Detect contours of a certain size
+        """
+        self.min_area = min_area
+        self.max_area = max_area
+
+    def filter(
+        self,
+        video: np.ndarray,
+    ):
+        # ret, thresh = cv2.threshold(frame, 175, 255, cv2.THRESH_BINARY)
+        return self.calculate(video)
+
+    def calculate(
+        self,
+        video: np.ndarray,
+    ):
+        boxes_per_frame = []
+        for frame in range(len(video)):
+            boxes = []
+            # find contours
+            thresh = cv2.cvtColor(video[frame, ...], cv2.COLOR_HSV2BGR)
+            thresh = cv2.cvtColor(thresh, cv2.COLOR_BGR2GRAY)
+            contours, heirachy = cv2.findContours(
+                image=thresh,
+                mode=cv2.RETR_EXTERNAL,
+                method=cv2.CHAIN_APPROX_SIMPLE,
+            )
+
+            for cont in contours:
+                rect = cv2.boundingRect(cont)
+                area = rect[2] * rect[3]  # h*w
+                if area >= self.min_area and area <= self.max_area:
+                    boxes.append(rect)
+
+            boxes_per_frame.append(boxes)
+
+        return boxes_per_frame
+
+
+## NOTE: Not implemented ##
 class SimpleObjectTracking(OfflineFilter):
     """
     Detect contours, track, and keep those which have somewhat
@@ -147,7 +205,9 @@ class SimpleObjectTracking(OfflineFilter):
     """
 
     def __init__(
-        self, video: Optional[np.ndarray] = None, fps: Optional[int] = None,
+        self,
+        video: Optional[np.ndarray] = None,
+        fps: Optional[int] = None,
     ):
 
         # Meaning of the state vector
@@ -194,14 +254,18 @@ class SimpleObjectTracking(OfflineFilter):
         # covariance of uncertainty in the observation being what is measured
         kalman.measurementNoiseCov = np.identity(n=state_size, dtype=np.float32) * 0.03
 
-    def object_check(self,):
+    def object_check(
+        self,
+    ):
         """
         if not seen in CNTR, is not object
         """
         pass
 
     def apply(
-        self, video: np.ndarray, fps: int,
+        self,
+        video: np.ndarray,
+        fps: int,
     ):
 
         video = video.astype(np.float32)
@@ -211,7 +275,9 @@ class SimpleObjectTracking(OfflineFilter):
     def detect_contours(self, frame):
         pass
 
-    def initialize_kf(self,):
+    def initialize_kf(
+        self,
+    ):
         pass
 
     def update_kf(self, kf, detections):

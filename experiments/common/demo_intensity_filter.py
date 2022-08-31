@@ -41,4 +41,4 @@ if __name__ == "__main__":
     videos = [s_channel, intensity_filtered]
     names = ["demo_raw_video.gif", "demo_intensity-filtered_video.gif"]
     for video, name in zip(videos, names):
-        write_video(video, name, image_path, fps, n)
+        write_video(video, name, fps, video_length=n, out_path=image_path)

@@ -54,15 +54,16 @@ class DFTFilter(OfflineFilter):
         self.fps = fps
 
     def filter(
-        self, video: np.ndarray, fps: Optional[int] = None,
+        self,
+        video: np.ndarray,
+        fps: Optional[int] = None,
     ):
         if fps is None:
             if self.fps is None:
                 raise ValueError("fps must be given if filter.fps is not set.")
             fps = self.fps
 
-        if self.mask is None:
-            self.calculate(video, fps)
+        self.calculate(video, fps)
 
         video = video.astype(np.float32)
         inv_mask = np.abs(self.mask - 1.0)
@@ -72,13 +73,17 @@ class DFTFilter(OfflineFilter):
         ), f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{self.mask.shape}"
 
         out = video * inv_mask
+        out = out.astype(np.uint8)
         log.debug(f"Returning filtered video of shape {out.shape}")
-
         log.debug(f"Video dtype {out.dtype}")
 
         return out
 
-    def calculate(self, video: np.ndarray, fps: int,) -> np.ndarray:
+    def calculate(
+        self,
+        video: np.ndarray,
+        fps: int,
+    ) -> np.ndarray:
 
         video = video.astype(np.float32)
         # take the fft of the video

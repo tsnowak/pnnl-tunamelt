@@ -1,6 +1,9 @@
+import logging
 from pathlib import Path
 from typing import List, Tuple, Union, Dict
-
+import sys
+from multiprocessing import Process, Pool
+import psutil
 import base64
 import asyncio
 import cv2
@@ -12,16 +15,76 @@ from scipy.fft import fft, fftfreq, fftn, fftshift
 
 from turbx import log
 
+log.setLevel(logging.INFO)
 
-def view(videos: Dict, fps, loop=True, save=True):
+
+def xywh_to_xyxy(box):
+    return ((box[0], box[1]), (box[0] + box[2], box[1] + box[3]))
+
+
+def write_video(
+    video: np.ndarray,
+    name: str,
+    fps: int,
+    video_length: Union[int, None] = None,
+    out_path: Union[Path, None] = None,
+    video_type: str = ".mp4",
+):
     """
-    open well-spaced video panes and show
-    sync frame index across videos
-    offline and online - show after filter is calculated
-    - assume video is 3D numpy tensor
+    video: numpy array - [N, H, W, C]
+    name: string - name of video
+    fps: int - frames per second of video
+    video_length: int, None - number of frames in the video
+    out_path: Path, None - path at which to write the video
     """
+
+    if video_length is None:
+        video_length = video.shape[0]
+    if out_path is None:
+        out_path = Path().absolute()
+
+    log.info(f"Started writing {name}{video_type}")
+    writer = iio.get_writer(
+        str(out_path) + "/" + f"{name}{video_type}", mode="I", fps=fps
+    )
+
+    for i in range(video_length):
+        writer.append_data(video[i, :, :, ::-1].astype(np.uint8))
+
+    writer.close()
+    log.info(f"Finished writing {name}{video_type}")
+
+
+def view(
+    videos: Dict,
+    label: Dict,
+    pred: list,
+    fps: int,
+    loop: bool = True,
+    save: bool = True,
+    out_path: Union[Path, None] = None,
+    video_type: str = ".mp4",
+):
+    """
+    Results display. Create pane per filtered video and for plot of results
+    """
+
+    # bounds length variable
     assert len(videos) != 0, "No videos given. Exiting."
 
+    # launch separate processes to save videos
+    if save:
+        procs = []
+        procs = len(videos) if len(videos) < psutil.cpu_count() else psutil.cpu_count()
+        args = [
+            (v, name, fps, len(v), out_path, video_type) for name, v in videos.items()
+        ]
+        pool = Pool(processes=procs)
+        pool.starmap_async(func=write_video, iterable=iter(args))
+        pool.close()
+
+    # create opencv windows
+    # TODO: create plot pane
     for name, v in videos.items():
         length = v.shape[0]
         cv2.namedWindow(f"{name}")
@@ -33,19 +96,30 @@ def view(videos: Dict, fps, loop=True, save=True):
 
         # update frame per pane
         for name, v in videos.items():
-            cv2.imshow(f"{name}", v[frame])
+            # TODO: draw per frame labels and predictions
+            anno = v[frame]
+            for box in pred[frame]:
+                box = xywh_to_xyxy(box)
+                anno = cv2.rectangle(anno, box[0], box[1], (0, 0, 255), 4)
+            cv2.imshow(f"{name}", anno)
 
         # exit on key press
         if cv2.waitKey(interval) & 0xFF == ord("q"):
             break
 
-        # loop
+        # increment frame and loop
         frame += 1
-        if frame == length:
+        if loop and (frame == length):
             frame = 0
 
-    # cleanly destroy
+    # cleanly destroy windows
     cv2.destroyAllWindows()
+
+    # cleanly exit after videos are saved
+    if save:
+        log.info("Waiting for videos to write...")
+        pool.join()
+        log.info("Done writing videos")
 
 
 class VideoStream(object):
@@ -86,18 +160,6 @@ def show_gif(f_path, img_width=100):
     return HTML(
         f'<img src="{f_path}" alt="Acoustic Camera GIF" style="width:{img_width}%"/>'
     )
-
-
-def write_video(
-    video: np.ndarray, name: str, out_path: Path, fps: int, video_length=int
-):
-
-    writer = iio.get_writer(str(out_path) + "/" + name, mode="I", fps=fps)
-
-    for i in range(video_length):
-        writer.append_data(video[i, ...].astype(np.uint8))
-
-    writer.close()
 
 
 def plot_time_domain_waveform(video, fps, pixel, freq_range=None):

@@ -98,13 +98,26 @@ class DataLoader:
         self.data_split = self.dataset.aligned_data[self.split]
         self._idx = 0
 
+    def __iter__(self):
+        return self
+
+    def __getitem__(self, idx):
+        v_path, label = self.data_split[idx]
+        video = to_numpy(v_path)
+        return video, label
+
+    def __setitem__(self):
+        raise NotImplementedError
+
+    def __delitem__(self):
+        raise NotImplementedError
+
     def __len__(self):
         return len(self.data_split)
 
     def __next__(self):
         if self._idx < len(self):
-            v_path, label = self.data_split[self._idx]
-            video = to_numpy(v_path)
+            video, label = self.__getitem__(self._idx)
             self._idx += 1
             return video, label
         else:

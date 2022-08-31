@@ -63,4 +63,4 @@ if __name__ == "__main__":
     ]
 
     for video, name in zip(videos, names):
-        write_video(video, name, image_path, fps, n)
+        write_video(video, name, fps, video_length=n, out_path=image_path)

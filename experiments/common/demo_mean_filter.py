@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     filter = common.MeanFilter(fps=fps)
 
-    print("Calculating filter...")
+    log.info("Calculating filter...")
     video, label = next(dataloader)
     filter.calculate(video, fps)
     out = filter.filter(video)
@@ -31,5 +31,12 @@ if __name__ == "__main__":
     video = numpy_to_cv2(video, "HSV", "BGR")
     out = numpy_to_cv2(out, "HSV", "RGB")
 
-    print("Displaying output...")
-    view({"original": video, "mean_filtered": out}, fps)
+    log.info("Displaying output...")
+    view(
+        {"original": video, "mean_filtered": out},
+        label,
+        label,  # placeholder for predictions output
+        fps,
+        out_path=Path(),
+        video_type=".gif",
+    )
