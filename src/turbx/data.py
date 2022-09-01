@@ -1,7 +1,7 @@
 from doctest import UnexpectedException
 import sys
 from pathlib import Path
-from typing import Union, List
+from typing import Union, List, Dict
 import xmltodict
 from pprint import pprint
 
@@ -321,7 +321,6 @@ def cap_to_nparray(cap, video_format="BGR"):
         fc += 1
     cap.release()
     return np.asarray(buf)
-
 
 ## UNTESTED ##
 

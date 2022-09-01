@@ -2,7 +2,7 @@ from pathlib import Path
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common
-from turbx.vis import view
+from turbx.vis import view, label_to_per_frame_list
 
 # args = standard_parser()
 
@@ -33,9 +33,9 @@ if __name__ == "__main__":
             "mean_filtered": mean,
         },
         label,
-        [],  # placeholder for predictions output
+        None,  # placeholder for predictions output
         fps,
-        save=False,
+        save=True,
         out_path=Path(),
         video_type=".gif",
     )

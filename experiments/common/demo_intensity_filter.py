@@ -41,9 +41,9 @@ if __name__ == "__main__":
             "intensity_filtered": intensity,
         },
         label,
-        [],  # placeholder for predictions output
+        None,  # placeholder for predictions output
         fps,
         save=False,
         out_path=Path(),
-        video_type=".gif",
+        video_type=".mp4",
     )

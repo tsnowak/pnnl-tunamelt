@@ -18,14 +18,47 @@ from turbx import log
 log.setLevel(logging.INFO)
 
 
+def label_to_per_frame_list(label: Dict):
+    """
+    Returns a list of bounding boxes per frame
+    """
+    boxes = [[] for _ in range(label["video_length"])]
+    for track in label["tracks"]:
+        for frame in track["frames"]:
+            boxes[frame["frame"]].append(frame["box"])
+
+    return boxes
+
+
 def xywh_to_xyxy(box):
     return ((box[0], box[1]), (box[0] + box[2], box[1] + box[3]))
+
+
+def draw_pred(image, frame_pred, color=(0, 255, 0)):
+    """
+    Draws prediction bounding box on the images
+    """
+    for box in frame_pred:
+        box = xywh_to_xyxy(box)
+        image = cv2.rectangle(image, box[0], box[1], color, 4)
+    return image
+
+
+def draw_label(image, frame_label, color=(0, 0, 255)):
+    """
+    Draws label bounding box on the images
+    """
+    for box in frame_label:
+        image = cv2.rectangle(image, box[0], box[1], color, 4)
+    return image
 
 
 def write_video(
     video: np.ndarray,
     name: str,
     fps: int,
+    label: Union[List, None] = None,
+    pred: Union[List, None] = None,
     video_length: Union[int, None] = None,
     out_path: Union[Path, None] = None,
     video_type: str = ".mp4",
@@ -49,7 +82,12 @@ def write_video(
     )
 
     for i in range(video_length):
-        writer.append_data(video[i, :, :, ::-1].astype(np.uint8))
+        image = video[i, ...]
+        if label is not None:
+            image = draw_label(image, label[i])
+        if pred is not None:
+            image = draw_pred(image, pred[i])
+        writer.append_data(image[:, :, ::-1].astype(np.uint8))
 
     writer.close()
     log.info(f"Finished writing {name}{video_type}")
@@ -57,8 +95,8 @@ def write_video(
 
 def view(
     videos: Dict,
-    label: Dict,
-    pred: list,
+    label: Union[Dict, None],
+    pred: Union[List, None],
     fps: int,
     loop: bool = True,
     save: bool = True,
@@ -72,14 +110,21 @@ def view(
     # bounds length variable
     assert len(videos) != 0, "No videos given. Exiting."
 
+    if label is not None:
+        label = label_to_per_frame_list(label)
+
     # launch separate processes to save videos
     # TODO: add annotations to saved videos
     if save:
         procs = []
         procs = len(videos) if len(videos) < psutil.cpu_count() else psutil.cpu_count()
         args = [
-            (v, name, fps, len(v), out_path, video_type) for name, v in videos.items()
+            (v, name, fps, label, pred, len(v), out_path, video_type)
+            for name, v in videos.items()
         ]
+        # single process
+        # [write_video(*arg) for arg in args]
+        # multi-process
         pool = Pool(processes=procs)
         pool.starmap_async(func=write_video, iterable=iter(args))
         pool.close()
@@ -98,12 +143,12 @@ def view(
         # update frame per pane
         for name, v in videos.items():
             # TODO: draw per frame labels and predictions
-            anno = v[frame]
-            if len(pred) > 0:
-                for box in pred[frame]:
-                    box = xywh_to_xyxy(box)
-                    anno = cv2.rectangle(anno, box[0], box[1], (0, 0, 255), 4)
-            cv2.imshow(f"{name}", anno)
+            image = v[frame]
+            if label is not None:
+                image = draw_label(image, label[frame])
+            if pred is not None:
+                image = draw_pred(image, pred[frame])
+            cv2.imshow(f"{name}", image)
 
         # exit on key press
         if cv2.waitKey(interval) & 0xFF == ord("q"):
