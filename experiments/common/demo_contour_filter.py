@@ -24,9 +24,10 @@ if __name__ == "__main__":
     contour_filter = common.ContourFilter()
 
     # get video, label
-    video, label = dataloader[0]
+    video, label = dataloader[12]
     log.info("Calculating filter...")
     # mean filter
+    log.info(video.shape)
     mean = mean_filter.filter(video)
     # intensity filter
     intensity = intensity_filter.filter(mean)
@@ -36,7 +37,7 @@ if __name__ == "__main__":
     video = numpy_to_cv2(video, "HSV", "BGR")
     mean = numpy_to_cv2(mean, "HSV", "RGB")
     intensity = numpy_to_cv2(intensity, "HSV", "RGB")
-
+    log.info(video.shape)
     log.info("Displaying output...")
     view(
         {
