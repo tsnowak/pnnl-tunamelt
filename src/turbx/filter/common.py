@@ -49,8 +49,7 @@ class MeanFilter(OfflineFilter):
             fps = self.fps
 
         self.calculate(video, fps)
-        video = video.astype(np.float32)
-        filtered_video = np.multiply(video, self.mask)
+        filtered_video = np.multiply(video, self.mask, dtype=np.uint32)
         filtered_video = filtered_video.astype(np.uint8)
         log.debug(f"Mean background filtered video of shape: {filtered_video.shape}")
         return filtered_video
@@ -67,7 +66,6 @@ class MeanFilter(OfflineFilter):
             - fps: fps of video - int
         """
         self.fps = fps
-        video = video.astype(np.float32)
         # calculate background
         mean = np.mean(video, axis=0)
         avg_value = np.mean(mean)
@@ -109,8 +107,7 @@ class IntensityFilter(OfflineFilter):
             fps = self.fps
         self.mask = self.calculate(video, fps)
 
-        video = video.astype(np.float32)
-        out = np.multiply(video, self.mask)
+        out = np.multiply(video, self.mask, dtype=np.uint32)
         out = out.astype(np.uint8)
         log.debug(f"Intensity filtered video of shape: {out.shape}")
         return out

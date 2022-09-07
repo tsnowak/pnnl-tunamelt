@@ -65,14 +65,17 @@ class DFTFilter(OfflineFilter):
 
         self.calculate(video, fps)
 
-        video = video.astype(np.float32)
-        inv_mask = np.abs(self.mask - 1.0)
+        self.mask = np.abs(self.mask - 1.0)
+
+        log.info(self.mask.dtype)
+        log.info(video.dtype)
+        log.info(video.shape) 
 
         assert (
             video.shape[1:3] == self.mask.shape[:2]
         ), f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{self.mask.shape}"
 
-        out = video * inv_mask
+        out = video * 1
         out = out.astype(np.uint8)
         log.debug(f"Returning filtered video of shape {out.shape}")
         log.debug(f"Video dtype {out.dtype}")
@@ -106,22 +109,20 @@ class DFTFilter(OfflineFilter):
 
         # remove pixels based on some thresholding strategy
         # mask = average_threshold(fft_video, freq, mag, freq_range, factor=2)
-        mask = self.thresh_func(pos_video_fft, pos_freq_bins, mag, self.freq_range)
+        self.mask = self.thresh_func(pos_video_fft, pos_freq_bins, mag, self.freq_range)
 
         assert (
-            mask.shape[:2] == video.shape[1:3]
+            self.mask.shape[:2] == video.shape[1:3]
         ), f"Mask shape differs from video shape \
                 \nMask: {mask.shape[:2]} \
                 \nVideo: {video.shape[1:2]}"
 
         assert (
-            mask.dtype == np.bool_
+            self.mask.dtype == np.bool_
         ), f"Mask dtype is not bool\
                 \n{mask.dtype}"
 
-        self.mask = mask
-
-        return mask
+        return self.mask
 
     def _mean_threshold(
         self,
