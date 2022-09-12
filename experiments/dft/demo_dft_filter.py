@@ -23,7 +23,7 @@ if __name__ == "__main__":
     contour_filter = common.ContourFilter()
 
     # get video, label
-    video, label = dataloader[0]
+    video, label = dataloader[6]
     log.info("Calculating filter...")
     # mean filter
     mean = mean_filter.filter(video)

@@ -4,6 +4,7 @@ from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
 from turbx.vis import view
+from turbx.metrics import boxes_to_binary
 
 # args = standard_parser()
 

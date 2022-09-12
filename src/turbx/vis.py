@@ -14,8 +14,32 @@ from matplotlib import pyplot as plt
 from scipy.fft import fft, fftfreq, fftn, fftshift
 
 from turbx import log
+from turbx.metrics import boxes_to_binary, tfpnr
 
 log.setLevel(logging.INFO)
+
+
+def plot_label_and_pred(label: List, pred: List):
+    # convert to per frame binary target presence labels
+    binary_label = boxes_to_binary(label)
+    binary_pred = boxes_to_binary(pred)
+    # calculare TPR and FPR metrics
+    tfpnr_dict = tfpnr(binary_label, binary_pred)
+
+    # plot binary per frame results
+    plt.figure("per_frame")
+    plt.plot(binary_label)
+    plt.plot(binary_pred)
+
+    plt.figure("metrics")
+    keys = ["tpr", "tnr", "fpr", "fnr"]
+    data = [tfpnr_dict[k] for k in keys]
+    plt.bar(keys, data)
+    plt.ylim(bottom=0.0, top=1.0)
+
+    plt.show(block=False)
+    # TODO: save to json results file
+    return None
 
 
 def label_to_per_frame_list(label: Dict):
@@ -130,10 +154,13 @@ def view(
         pool.close()
 
     # create opencv windows
-    # TODO: create plot pane
     for name, v in videos.items():
         length = v.shape[0]
         cv2.namedWindow(f"{name}")
+
+    # plot binary label and predictions
+    if (label is not None) and (pred is not None):
+        plot_label_and_pred(label, pred)
 
     interval = int(1000 / fps)
     frame = 0
@@ -160,6 +187,7 @@ def view(
             frame = 0
 
     # cleanly destroy windows
+    plt.close("all")
     cv2.destroyAllWindows()
 
     # cleanly exit after videos are saved
