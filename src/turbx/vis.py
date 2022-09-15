@@ -1,4 +1,5 @@
 import logging
+import json
 from pathlib import Path
 from typing import List, Tuple, Union, Dict
 import sys
@@ -39,7 +40,7 @@ def plot_label_and_pred(label: List, pred: List):
 
     plt.show(block=False)
     # TODO: save to json results file
-    return None
+    return binary_label, binary_pred, tfpnr_dict
 
 
 def label_to_per_frame_list(label: Dict):
@@ -134,6 +135,7 @@ def view(
     # bounds length variable
     assert len(videos) != 0, "No videos given. Exiting."
 
+    label_dict = label
     if label is not None:
         label = label_to_per_frame_list(label)
 
@@ -160,7 +162,19 @@ def view(
 
     # plot binary label and predictions
     if (label is not None) and (pred is not None):
-        plot_label_and_pred(label, pred)
+        binary_label, binary_pred, tfpnr_dict = plot_label_and_pred(label, pred)
+        # save results to json
+        with open(f"{str(out_path)}/{label_dict['filename']}.results.json", "w") as f:
+            json_content = json.dumps(
+                {
+                    "label": label_dict,
+                    "prediction": pred,
+                    "parameters": {"TODO": None},
+                    "results": tfpnr_dict,
+                },
+                indent=4,
+            )
+            f.write(json_content)
 
     interval = int(1000 / fps)
     frame = 0
