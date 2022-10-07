@@ -20,12 +20,14 @@ if __name__ == "__main__":
     fps = 10
     frame_delay = 1.0 / fps
 
-    filter = common.MeanFilter(fps=fps)
+    mean_filter = common.MeanFilter(fps=fps)
+    denoise_filter = common.DeNoiseFilter(fps=fps)
 
     log.info("Calculating filter...")
-    video, label = dataloader[3]
+    video, label = dataloader[0]
     value_channel = video[..., 2]
-    mean = filter.filter(value_channel)
+    mean = mean_filter.filter(value_channel)
+    denoised = denoise_filter.filter(mean)
 
     video = numpy_to_cv2(video, "HSV", "BGR")
     # mean = numpy_to_cv2(mean, "HSV", "BGR")
@@ -38,6 +40,7 @@ if __name__ == "__main__":
         {
             "original": video,
             "mean_filtered": mean,
+            "denoised": denoised,
         },
         label,
         None,  # placeholder for predictions output

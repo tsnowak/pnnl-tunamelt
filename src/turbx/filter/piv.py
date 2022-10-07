@@ -14,15 +14,36 @@ import matplotlib.pyplot as plt
 import cv2
 
 from turbx import log
-from turbx.utils import Array
+from turbx.filter.base import OfflineFilter
+
+
+class PIVFilter(OfflineFilter):
+    def __init__(
+        self,
+        video: Optional[np.ndarray] = None,
+        fps: Optional[int] = None,
+    ):
+        super().__init__(video, fps)
+        if self.mask is None:
+            log.debug(f"Did not generate {self.__class__} filter.")
+        else:
+            log.debug(f"Generated {self.__class__} filter mask.")
+
+        self.fps = fps
+
+    def filter(
+        self,
+        video: np.ndarray,
+        fps: Optional[int] = None,
+    ):
 
 
 def piv_filter(
-    video: Array["N,H,W,C", np.uint8],
+    video: Optional[np.ndarray],
     fps: int,
     freq_range: Optional[Tuple] = (1.5, 3.0),
-    thresh_func: Optional[Callable[[Tuple], Array["N,H,W,C", np.float32]]] = None,
-) -> Array["H,W,C", np.uint8]:
+    thresh_func: Optional[Callable[[Tuple], Optional[np.ndarray]]] = None,
+) -> Optional[np.ndarray]:
     pass
 
     log.debug(f"input video shape:{video.shape}")

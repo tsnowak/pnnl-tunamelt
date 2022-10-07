@@ -39,7 +39,6 @@ def plot_label_and_pred(label: List, pred: List):
     plt.ylim(bottom=0.0, top=1.0)
 
     plt.show(block=False)
-    # TODO: save to json results file
     return binary_label, binary_pred, tfpnr_dict
 
 
@@ -124,6 +123,7 @@ def view(
     pred: Union[List, None],
     fps: int,
     loop: bool = True,
+    show: bool = True,
     save: bool = True,
     out_path: Union[Path, None] = None,
     video_type: str = ".mp4",
@@ -156,53 +156,58 @@ def view(
         pool.close()
 
     # create opencv windows
-    for name, v in videos.items():
-        length = v.shape[0]
-        cv2.namedWindow(f"{name}")
+    if show:
+        for name, v in videos.items():
+            length = v.shape[0]
+            cv2.namedWindow(f"{name}")
 
     # plot binary label and predictions
     if (label is not None) and (pred is not None):
         binary_label, binary_pred, tfpnr_dict = plot_label_and_pred(label, pred)
         # save results to json
-        with open(f"{str(out_path)}/{label_dict['filename']}.results.json", "w") as f:
-            json_content = json.dumps(
-                {
-                    "label": label_dict,
-                    "prediction": pred,
-                    "parameters": {"TODO": None},
-                    "results": tfpnr_dict,
-                },
-                indent=4,
-            )
-            f.write(json_content)
+        if save:
+            with open(
+                f"{str(out_path)}/{label_dict['filename']}.results.json", "w"
+            ) as f:
+                json_content = json.dumps(
+                    {
+                        "label": label_dict,
+                        "prediction": pred,
+                        "parameters": {"TODO": None},
+                        "results": tfpnr_dict,
+                    },
+                    indent=4,
+                )
+                f.write(json_content)
 
     interval = int(1000 / fps)
     frame = 0
     # loop over videos
-    while True:
+    if show:
+        while True:
 
-        # update frame per pane
-        for name, v in videos.items():
-            # TODO: draw per frame labels and predictions
-            image = v[frame]
-            if label is not None:
-                image = draw_label(image, label[frame])
-            if pred is not None:
-                image = draw_pred(image, pred[frame])
-            cv2.imshow(f"{name}", image)
+            # update frame per pane
+            for name, v in videos.items():
+                # TODO: draw per frame labels and predictions
+                image = v[frame]
+                if label is not None:
+                    image = draw_label(image, label[frame])
+                if pred is not None:
+                    image = draw_pred(image, pred[frame])
+                cv2.imshow(f"{name}", image)
 
-        # exit on key press
-        if cv2.waitKey(interval) & 0xFF == ord("q"):
-            break
+            # exit on key press
+            if cv2.waitKey(interval) & 0xFF == ord("q"):
+                break
 
-        # increment frame and loop
-        frame += 1
-        if loop and (frame == length):
-            frame = 0
+            # increment frame and loop
+            frame += 1
+            if loop and (frame == length):
+                frame = 0
 
-    # cleanly destroy windows
-    plt.close("all")
-    cv2.destroyAllWindows()
+        # cleanly destroy windows
+        plt.close("all")
+        cv2.destroyAllWindows()
 
     # cleanly exit after videos are saved
     if save:

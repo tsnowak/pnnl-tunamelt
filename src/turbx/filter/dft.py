@@ -27,7 +27,7 @@ class DFTFilter(OfflineFilter):
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
-        freq_range: Optional[Tuple] = (1.5, 3.0),
+        freq_range: Optional[Tuple] = (1.0, 4.0),
         thresh_func: Optional[str] = "max",
     ):
 

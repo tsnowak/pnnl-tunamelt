@@ -47,6 +47,9 @@ def tfpnr(label: List, pred: List) -> Dict:
         elif (label[l] == 1) and (pred[l] == 0):
             fn += 1
 
+    def safe_division(n, d):
+        return n / d if d else 0
+
     return {
         "p": p,
         "n": n,
@@ -54,10 +57,10 @@ def tfpnr(label: List, pred: List) -> Dict:
         "tn": tn,
         "fp": fp,
         "fn": fn,
-        "tpr": float(tp) / p,
-        "tnr": float(tn) / n,
-        "fpr": float(fp) / n,
-        "fnr": float(fn) / p,
+        "tpr": safe_division(float(tp), p),
+        "tnr": safe_division(float(tn), n),
+        "fpr": safe_division(float(fp), n),
+        "fnr": safe_division(float(fn), p),
     }
 
 
