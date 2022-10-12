@@ -1,4 +1,5 @@
 import logging
+import json
 from pathlib import Path
 from typing import List, Tuple, Union, Dict
 import sys
@@ -14,8 +15,31 @@ from matplotlib import pyplot as plt
 from scipy.fft import fft, fftfreq, fftn, fftshift
 
 from turbx import log
+from turbx.metrics import boxes_to_binary, tfpnr
 
 log.setLevel(logging.INFO)
+
+
+def plot_label_and_pred(label: List, pred: List):
+    # convert to per frame binary target presence labels
+    binary_label = boxes_to_binary(label)
+    binary_pred = boxes_to_binary(pred)
+    # calculare TPR and FPR metrics
+    tfpnr_dict = tfpnr(binary_label, binary_pred)
+
+    # plot binary per frame results
+    plt.figure("per_frame")
+    plt.plot(binary_label)
+    plt.plot(binary_pred)
+
+    plt.figure("metrics")
+    keys = ["tpr", "tnr", "fpr", "fnr"]
+    data = [tfpnr_dict[k] for k in keys]
+    plt.bar(keys, data)
+    plt.ylim(bottom=0.0, top=1.0)
+
+    plt.show(block=False)
+    return binary_label, binary_pred, tfpnr_dict
 
 
 def label_to_per_frame_list(label: Dict):
@@ -38,6 +62,9 @@ def draw_pred(image, frame_pred, color=(0, 255, 0)):
     """
     Draws prediction bounding box on the images
     """
+    # grayscale - box should be white
+    if len(image.shape) != 3:
+        color = (255, 255, 255)
     for box in frame_pred:
         box = xywh_to_xyxy(box)
         image = cv2.rectangle(image, box[0], box[1], color, 4)
@@ -48,6 +75,9 @@ def draw_label(image, frame_label, color=(0, 0, 255)):
     """
     Draws label bounding box on the images
     """
+    # grayscale - box should be white
+    if len(image.shape) != 3:
+        color = (255, 255, 255)
     for box in frame_label:
         image = cv2.rectangle(image, box[0], box[1], color, 4)
     return image
@@ -99,6 +129,7 @@ def view(
     pred: Union[List, None],
     fps: int,
     loop: bool = True,
+    show: bool = True,
     save: bool = True,
     out_path: Union[Path, None] = None,
     video_type: str = ".mp4",
@@ -110,6 +141,7 @@ def view(
     # bounds length variable
     assert len(videos) != 0, "No videos given. Exiting."
 
+    label_dict = label
     if label is not None:
         label = label_to_per_frame_list(label)
 
@@ -130,37 +162,61 @@ def view(
         pool.close()
 
     # create opencv windows
-    # TODO: create plot pane
-    for name, v in videos.items():
-        length = v.shape[0]
-        cv2.namedWindow(f"{name}")
+    _loc = (0, 0)
+    _win_size = (900, 400)
+    if show:
+        for name, v in videos.items():
+            length = v.shape[0]
+            cv2.namedWindow(f"{name}")
+            cv2.moveWindow(f"{name}", _loc[1], _loc[0])
+            _loc = (_loc[0], _loc[1] + _win_size[1])
+
+    # plot binary label and predictions
+    if (label is not None) and (pred is not None):
+        binary_label, binary_pred, tfpnr_dict = plot_label_and_pred(label, pred)
+        # save results to json
+        if save:
+            with open(
+                f"{str(out_path)}/{label_dict['filename']}.results.json", "w"
+            ) as f:
+                json_content = json.dumps(
+                    {
+                        "label": label_dict,
+                        "prediction": pred,
+                        "parameters": {"TODO": None},
+                        "results": tfpnr_dict,
+                    },
+                    indent=4,
+                )
+                f.write(json_content)
 
     interval = int(1000 / fps)
     frame = 0
     # loop over videos
-    while True:
+    if show:
+        while True:
 
-        # update frame per pane
-        for name, v in videos.items():
-            # TODO: draw per frame labels and predictions
-            image = v[frame]
-            if label is not None:
-                image = draw_label(image, label[frame])
-            if pred is not None:
-                image = draw_pred(image, pred[frame])
-            cv2.imshow(f"{name}", image)
+            # update frame per pane
+            for name, v in videos.items():
+                image = v[frame]
+                if label is not None:
+                    image = draw_label(image, label[frame])
+                if pred is not None:
+                    image = draw_pred(image, pred[frame])
+                cv2.imshow(f"{name}", image)
 
-        # exit on key press
-        if cv2.waitKey(interval) & 0xFF == ord("q"):
-            break
+            # exit on key press
+            if cv2.waitKey(interval) & 0xFF == ord("q"):
+                break
 
-        # increment frame and loop
-        frame += 1
-        if loop and (frame == length):
-            frame = 0
+            # increment frame and loop
+            frame += 1
+            if loop and (frame == length):
+                frame = 0
 
-    # cleanly destroy windows
-    cv2.destroyAllWindows()
+        # cleanly destroy windows
+        plt.close("all")
+        cv2.destroyAllWindows()
 
     # cleanly exit after videos are saved
     if save:

@@ -28,7 +28,7 @@ class DFTFilter(OfflineFilter):
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
-        freq_range: Optional[Tuple] = (1.5, 3.0),
+        freq_range: Optional[Tuple] = (1.0, 4.0),
         thresh_func: Optional[str] = "max",
     ):
 
@@ -53,6 +53,7 @@ class DFTFilter(OfflineFilter):
             log.debug(f"Generated {self.__class__} filter mask.")
 
         self.fps = fps
+        self.out_format = "GRAY"
 
     def filter(
         self,

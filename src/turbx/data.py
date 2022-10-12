@@ -266,15 +266,24 @@ def parse_cvat_video_11(xml_f):
 
 def numpy_to_cv2(videos: Union[List, np.ndarray], input_format, output_format):
 
+    # support multi-video input - cast singletons to list
     if not isinstance(videos, list):
         videos = [videos]
 
+    # loop through videos
     for idx, video in enumerate(videos):
+        if len(video.shape) == 4:
+            out_video = np.ndarray(video.shape, dtype=video.dtype)
+        elif len(video.shape) == 3:
+            out_video = np.ndarray(video.shape + (3,), dtype=video.dtype)
+        else:
+            raise ValueError("Video is neither of len(shape) 4 or 3.")
+        # loop through frames
         for i in range(video.shape[0]):
             frame = video[i, ...]
             color_cmd = eval(f"cv2.COLOR_{input_format}2{output_format}")
-            video[i, ...] = cv2.cvtColor(frame, color_cmd)
-        videos[idx] = video
+            out_video[i, ...] = cv2.cvtColor(frame, color_cmd)
+        videos[idx] = out_video
 
     if len(videos) == 1:
         return videos[0]
@@ -318,6 +327,7 @@ def cap_to_nparray(cap, video_format="BGR"):
         fc += 1
     cap.release()
     return np.asarray(buf)
+
 
 ## UNTESTED ##
 
