@@ -52,6 +52,7 @@ class DFTFilter(OfflineFilter):
             log.debug(f"Generated {self.__class__} filter mask.")
 
         self.fps = fps
+        self.out_format = "GRAY"
 
     def filter(
         self,

@@ -1,6 +1,7 @@
 from typing import Optional, List, Tuple
 import numpy as np
 import cv2
+import pywt
 from turbx import log
 from turbx.filter.base import OfflineFilter
 
@@ -25,7 +26,7 @@ class MeanFilter(OfflineFilter):
         else:
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
-        self.outformat = "GRAY"
+        self.out_format = "GRAY"
 
     def filter(
         self,
@@ -75,10 +76,8 @@ class MeanFilter(OfflineFilter):
         mean = np.mean(value_channel, axis=0)
         var = np.var(value_channel.astype(np.float64), axis=0)
         # avg_value := single average pixel value for the value_channel
-        avg_mean = np.mean(mean)
-        print(avg_mean)
+        # avg_mean = np.mean(mean)
         avg_var = np.mean(var)
-        print(np.sqrt(avg_var))
 
         # remove background
         # only compare h,s,V - Value values (N, W, H, 1)
@@ -110,7 +109,7 @@ class DeNoiseFilter(OfflineFilter):
         else:
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
-        self.outformat = "GRAY"
+        self.out_format = "GRAY"
 
     def filter(
         self,
@@ -199,6 +198,7 @@ class IntensityFilter(OfflineFilter):
         else:
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
+        self.out_format = "GRAY"
 
     def filter(
         self,
@@ -249,13 +249,12 @@ class IntensityFilter(OfflineFilter):
         return mask
 
 
-class DilateErrode(OfflineFilter):
+class SpeckleFilter(OfflineFilter):
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
-        dilation: Optional[int] = 5,
-        erosion: Optional[int] = 6,
+        kernel_shape: Optional[Tuple] = (5, 5),
     ):
         """
         Try to remove speckles by building up then eroding
@@ -266,8 +265,8 @@ class DilateErrode(OfflineFilter):
         else:
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
-        self.dilation = dilation
-        self.erosion = erosion
+        self.out_format = "GRAY"
+        self.kernel_shape = kernel_shape
 
     def filter(
         self,
@@ -287,17 +286,20 @@ class DilateErrode(OfflineFilter):
         video: np.ndarray,
         fps: int,
     ):
+        video = video.copy()
         self.fps = fps
-        dilation_kernel = np.ones((self.dilation, self.dilation), np.uint8)
-        erosion_kernel = np.ones((self.erosion, self.erosion), np.uint8)
+        kernel = np.ones(self.kernel_shape, np.uint8)
+        # dilation_kernel = np.ones((self.dilation, self.dilation), np.uint8)
+        # erosion_kernel = np.ones((self.erosion, self.erosion), np.uint8)
         # diff_kernel = np.ones(
         #    (self.erosion - self.dilation, self.erosion - self.dilation), np.uint8
         # )
         for idx, frame in enumerate(video):
-            frame = cv2.erode(frame, erosion_kernel, iterations=1)
-            frame = cv2.dilate(frame, dilation_kernel, iterations=1)
+            opening = cv2.morphologyEx(frame, cv2.MORPH_OPEN, kernel)
+            # frame = cv2.erode(frame, erosion_kernel, iterations=1)
+            # frame = cv2.dilate(frame, dilation_kernel, iterations=1)
             # frame = cv2.dilate(frame, diff_kernel, iterations=1)
-            video[idx, ...] = frame
+            video[idx, ...] = opening
 
         return video
 
@@ -349,94 +351,3 @@ class ContourFilter:
             boxes_per_frame.append(boxes)
 
         return boxes_per_frame
-
-
-## NOTE: Not implemented ##
-class SimpleObjectTracking(OfflineFilter):
-    """
-    Detect contours, track, and keep those which have somewhat
-    constant/reasonable velocity and permanance
-
-    - contour detect > size
-    - kalman filter, predict, update
-    - if error too large, it's not an object
-    """
-
-    def __init__(
-        self,
-        video: Optional[np.ndarray] = None,
-        fps: Optional[int] = None,
-    ):
-
-        # Meaning of the state vector
-        # state is the centroid location, size, and speed + noise
-        # state := [x, y, v_x, v_y, w, h]
-        state_size = 6
-
-        # Meaning of the measurement vector
-        # observation is the centroid location and size + noise
-        # observation = z := [x, y, w, h]
-        measurement_size = 4
-
-        # No controls; no control vector
-        controls_size = 0
-
-        kalman = cv2.KalmanFilter(
-            dynamParams=state_size,
-            measureParams=measurement_size,
-            controlParams=controls_size,
-        )
-        measurement = np.array((measurement_size, 1), np.float32)
-        prediction = np.zeros((measurement_size, 1), np.float32)
-
-        state_transition_matrix = np.identity(n=state_size, dtype=np.float32)
-        kalman.transitionMatrix = state_transition_matrix
-
-        # state_size by measurement_size
-        observation_matrix = np.array(
-            [
-                [1, 0, 0, 0, 0, 0],
-                [0, 1, 0, 0, 0, 0],
-                [0, 0, 1, 0, 0, 0],
-                [0, 0, 0, 1, 0, 0],
-            ],
-            dtype=np.float32,
-        )  # E201, E202
-        kalman.measurementMatrix = observation_matrix
-
-        # state/process noise
-        # covariance of uncertainty in the state being what it is
-        kalman.processNoiseCov = np.identity(n=state_size, dtype=np.float32) * 0.05
-
-        # measurement/observation noise
-        # covariance of uncertainty in the observation being what is measured
-        kalman.measurementNoiseCov = np.identity(n=state_size, dtype=np.float32) * 0.03
-
-    def object_check(
-        self,
-    ):
-        """
-        if not seen in CNTR, is not object
-        """
-        pass
-
-    def apply(
-        self,
-        video: np.ndarray,
-        fps: int,
-    ):
-
-        video = video.astype(np.float32)
-
-        initialize_kf()
-
-    def detect_contours(self, frame):
-        pass
-
-    def initialize_kf(
-        self,
-    ):
-        pass
-
-    def update_kf(self, kf, detections):
-        pass

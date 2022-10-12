@@ -1,9 +1,25 @@
 # TODOs
 
-- [] Modify all filters to only use (HSV) value channel [NxWxH or NxWxHx1]
-- [] Modify filters to be grounded in prior work/common implementations as much as possible
-- [] After modification identify if speckle filter is needed (Wavelet?)
-- [] Finish implementing PIV filter
+- 10/12/2022
+
+  - [*] Auto-arranged windows across screen
+  - [*] Debugged display bboxes on grayscale images (gray->color in vis) -> create new np.array that's 3-dim for each displayed video (was overwritting in place, but gray weren't right dims)
+  - [*] Add out_format variable to filter classes
+  - [*] Convert errode/dilate to cv2.opening (see docs)
+    - [*] Erodes fish too much - also why are scale numbers not fully filtered by mean filter
+    - [] Not temporal and insufficient; other options in findpeaks package
+
+- [*] Made demos extensible to general filters
+
+  - [*] demo: dft, mean, contour; run: dft ... refactored
+
+- [] Ground filters in existent methods to reference and describe mathematically in paper
+  - [] Background filter
+  - [] Intensity filter?
+- [] Improve filter output (lots of noise/speckle)
+  - [] Implement speckle filter
+- [] Implement and test additional filters
+  - [] Finish implementing PIV filter
 
 # Video Labels
 

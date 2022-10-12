@@ -1,46 +1,64 @@
 from pathlib import Path
-import numpy as np
+from typing import OrderedDict
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common
-from turbx.vis import view, label_to_per_frame_list, write_video
-
-# args = standard_parser()
+from turbx.vis import view
 
 if __name__ == "__main__":
 
     file_path = f"{REPO_PATH}/data/mp4"
     labels = f"{REPO_PATH}/data/labels"
 
-    dataloader = DataLoader(
-        Dataset(videos=file_path, labels=labels, video_format="HSV")
-    )
+    dataloader = DataLoader(Dataset(videos=file_path, labels=labels))
 
-    # TODO can I get this from video file?
     fps = 10
     frame_delay = 1.0 / fps
 
-    filter = common.MeanFilter(fps=fps)
+    # initialize filters
+    mean_filter = common.MeanFilter(fps=fps)
 
-    log.info("Calculating filter...")
+    # define filter order
+    filter_order = [
+        "original",
+        mean_filter,
+    ]
+
+    # get video, label
     video, label = dataloader[3]
-    value_channel = video[..., 2]
-    mean = filter.filter(value_channel)
+    log.info(f"Using video {label['video_id']}...")
 
-    video = numpy_to_cv2(video, "HSV", "BGR")
-    # mean = numpy_to_cv2(mean, "HSV", "BGR")
+    # calculate filters in order
+    log.info("Calculating filters...")
+    outputs = OrderedDict()
+    for idx, filter in enumerate(filter_order):
+        filter_name = filter if isinstance(filter, str) else filter.__class__.__name__
+        log.info(f"\tCalculating {filter_name}...")
+        if filter == "original":
+            outputs["original"] = video[..., 2]
+        else:
+            tmp = list(outputs.items())[-1]
+            outputs[filter.__class__.__name__] = filter.filter(tmp[1])
 
-    # mask = numpy_to_cv2((filter.mask).astype(np.uint8), "GRAY", "RGB")
-    # write_video(mask, "mean_mask", fps=fps)
+    # get filter outputs in order
+    display = OrderedDict()
+    pred = None
+    idx = 0
+    for name, output in outputs.items():
+        if name == "original":
+            display[name] = numpy_to_cv2(video, "HSV", "BGR")
+        elif name == "ContourFilter":
+            pred = output
+        else:
+            display[name] = numpy_to_cv2(output, filter_order[idx].out_format, "BGR")
+        idx += 1
 
-    log.info("Displaying output...")
+    # display or save filters
+    log.info("Visualizing filter output...")
     view(
-        {
-            "original": video,
-            "mean_filtered": mean,
-        },
+        display,
         label,
-        None,  # placeholder for predictions output
+        pred,
         fps,
         show=True,
         save=False,

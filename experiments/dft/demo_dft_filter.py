@@ -1,13 +1,9 @@
-import os
-from datetime import datetime
 from pathlib import Path
-import imageio as iio
+from typing import OrderedDict
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
 from turbx.vis import view
-
-# args = standard_parser()
 
 if __name__ == "__main__":
 
@@ -16,49 +12,58 @@ if __name__ == "__main__":
 
     dataloader = DataLoader(Dataset(videos=file_path, labels=labels))
 
-    # TODO can I get this from video file?
     fps = 10
     frame_delay = 1.0 / fps
 
+    # initialize filters
     mean_filter = common.MeanFilter(fps=fps)
     turbine_filter = dft.DFTFilter(fps=fps)
-    intensity_filter = common.IntensityFilter(fps=fps)
-    # median
-    de_filter = common.DilateErrode(fps=fps, dilation=4, erosion=4)
+    speckle_filter = common.SpeckleFilter(fps=fps, kernel_shape=(5, 5))
     contour_filter = common.ContourFilter()
+
+    # define filter order
+    filter_order = [
+        "original",
+        mean_filter,
+        turbine_filter,
+        contour_filter,
+    ]
 
     # get video, label
     video, label = dataloader[3]
-    value_channel = video[..., 2]
-    log.info("Calculating filter...")
-    # mean filter
-    mean = mean_filter.filter(value_channel)
-    # turbine filter
-    turbine = turbine_filter.filter(mean)
-    # intensity filter
-    # intensity = intensity_filter.filter(turbine)
-    # dilation_erosion filter
-    de = de_filter.filter(turbine)
-    # contour filter
-    pred = contour_filter.filter(de)
+    log.info(f"Using video {label['video_id']}...")
 
-    video = numpy_to_cv2(video, "HSV", "BGR")
-    # mean = numpy_to_cv2(mean, "HSV", "BGR")
-    # turbine = numpy_to_cv2(turbine, "HSV", "BGR")
-    # intensity = numpy_to_cv2(intensity, "HSV", "RGB")
-    # de = numpy_to_cv2(de, "HSV", "RGB")
+    # calculate filters in order
+    log.info("Calculating filters...")
+    outputs = OrderedDict()
+    for idx, filter in enumerate(filter_order):
+        filter_name = filter if isinstance(filter, str) else filter.__class__.__name__
+        log.info(f"\tCalculating {filter_name}...")
+        if filter == "original":
+            outputs["original"] = video[..., 2]
+        else:
+            tmp = list(outputs.items())[-1]
+            outputs[filter.__class__.__name__] = filter.filter(tmp[1])
 
-    log.info("Generating output...")
+    # get filter outputs in order
+    display = OrderedDict()
+    pred = None
+    idx = 0
+    for name, output in outputs.items():
+        if name == "original":
+            display[name] = numpy_to_cv2(video, "HSV", "BGR")
+        elif name == "ContourFilter":
+            pred = output
+        else:
+            display[name] = numpy_to_cv2(output, filter_order[idx].out_format, "BGR")
+        idx += 1
+
+    # display or save filters
+    log.info("Visualizing filter output...")
     view(
-        {
-            "original": video,
-            "mean_filtered": mean,
-            "turbine_filtered": turbine,
-            "intensity_filtered": intensity,
-            "dilated_eroded": de,
-        },
+        display,
         label,
-        pred,  # placeholder for predictions output
+        pred,
         fps,
         show=True,
         save=False,

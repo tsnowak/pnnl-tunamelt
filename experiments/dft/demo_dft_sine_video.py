@@ -56,7 +56,7 @@ def main():
 
     # apply filter: mask - 1 in range, 0 out of range; inv_mask - 0 in range, 1 out of range
     dft = DFTFilter(video=video, fps=fps, freq_range=filter_freq_range)
-    mask = dft.generate()
+    mask = dft.calculate(video, fps)
     inv_mask = np.abs(mask - 1.0)
 
     # write filtered waveform video to file

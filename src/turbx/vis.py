@@ -62,6 +62,9 @@ def draw_pred(image, frame_pred, color=(0, 255, 0)):
     """
     Draws prediction bounding box on the images
     """
+    # grayscale - box should be white
+    if len(image.shape) != 3:
+        color = (255, 255, 255)
     for box in frame_pred:
         box = xywh_to_xyxy(box)
         image = cv2.rectangle(image, box[0], box[1], color, 4)
@@ -72,6 +75,9 @@ def draw_label(image, frame_label, color=(0, 0, 255)):
     """
     Draws label bounding box on the images
     """
+    # grayscale - box should be white
+    if len(image.shape) != 3:
+        color = (255, 255, 255)
     for box in frame_label:
         image = cv2.rectangle(image, box[0], box[1], color, 4)
     return image
@@ -156,10 +162,14 @@ def view(
         pool.close()
 
     # create opencv windows
+    _loc = (0, 0)
+    _win_size = (900, 400)
     if show:
         for name, v in videos.items():
             length = v.shape[0]
             cv2.namedWindow(f"{name}")
+            cv2.moveWindow(f"{name}", _loc[1], _loc[0])
+            _loc = (_loc[0], _loc[1] + _win_size[1])
 
     # plot binary label and predictions
     if (label is not None) and (pred is not None):
@@ -188,7 +198,6 @@ def view(
 
             # update frame per pane
             for name, v in videos.items():
-                # TODO: draw per frame labels and predictions
                 image = v[frame]
                 if label is not None:
                     image = draw_label(image, label[frame])
