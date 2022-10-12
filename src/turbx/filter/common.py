@@ -72,11 +72,6 @@ class MeanFilter(OfflineFilter):
             - fps: fps of value_channel - int
         """
         self.fps = fps
-<<<<<<< HEAD
-        # calculate background
-        mean = np.mean(video, axis=0, dtype=np.float16)
-        avg_value = np.mean(mean)
-=======
         value_channel = value_channel.astype(np.float16)
         # calculate background
         # mean := frame of average values from throughout the value_channel
@@ -85,7 +80,6 @@ class MeanFilter(OfflineFilter):
         # avg_value := single average pixel value for the value_channel
         # avg_mean = np.mean(mean)
         avg_var = np.mean(var)
->>>>>>> master
 
         # remove background
         # only compare h,s,V - Value values (N, W, H, 1)
@@ -313,13 +307,8 @@ class ContourFilter:
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
-<<<<<<< HEAD
-        min_area: int = 100,
-        max_area: int = 1000,
-=======
         min_area: int = 150,
         max_area: int = 1200,
->>>>>>> master
     ):
         """
         Detect contours of a certain size
