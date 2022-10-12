@@ -37,12 +37,10 @@ class Dataset:
     ):
 
         log.info("Initializing Dataset...")
-
         # Find and load video data
         # ensure path is a list of pathlib.Paths
         self.videos = find_files(videos)
         log.info(f"{len(self.videos)} video files found")
-
         # parse given labels files
         # is None if labels is None
         self.labels = parse_labels(labels)
@@ -63,7 +61,6 @@ class Dataset:
         if self.labels is None:
             # create default split name of "None"
             return {"None": list(zip(self.videos, [None] * len(self.videos)))}
-
         dataset = {}
         # TODO: inefficiently implemented...
         for split, data in self.labels.items():

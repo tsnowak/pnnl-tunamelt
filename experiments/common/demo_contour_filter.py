@@ -3,6 +3,7 @@ from pathlib import Path
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
+from turbx.filter.sdft import sdft_filter
 from turbx.vis import view
 
 # args = standard_parser()
@@ -24,12 +25,18 @@ if __name__ == "__main__":
     contour_filter = common.ContourFilter()
 
     # get video, label
-    video, label = dataloader[12]
+    video, label = dataloader[0]
+
     log.info("Calculating filter...")
     # mean filter
     log.info(video.shape)
-    mean = mean_filter.filter(video)
-    # intensity filter
+    log.info("removing turbine...")
+    turb = sdft_filter(video[:,:,:,0], fps=10)
+
+    log.info("removing background...")
+    mean = mean_filter.filter(turb)
+    log.info("detecting fish...")
+
     intensity = intensity_filter.filter(mean)
     # contour filter
     pred = contour_filter.filter(intensity)
@@ -42,7 +49,7 @@ if __name__ == "__main__":
     view(
         {
             "original": video,
-            "mean_filtered": mean,
+            "turbing removal": turb,
             "intensity_filtered": intensity,
         },
         label,

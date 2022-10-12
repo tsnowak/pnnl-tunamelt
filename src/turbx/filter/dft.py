@@ -4,6 +4,7 @@ Implementation of DFT used to mask pixels exhibiting certain frequencies
 from typing import Optional, Tuple
 
 import numpy as np
+import cv2
 from turbx import log
 from turbx.filter.base import OfflineFilter
 from scipy.fft import fft, fftfreq, fftshift
@@ -66,16 +67,15 @@ class DFTFilter(OfflineFilter):
         self.calculate(video, fps)
 
         self.mask = np.abs(self.mask - 1.0)
-
-        log.info(self.mask.dtype)
-        log.info(video.dtype)
-        log.info(video.shape) 
+        cv2.imwrite('../../../experiments/dft/outputs/mask_with_blur.png', self.mask)
 
         assert (
             video.shape[1:3] == self.mask.shape[:2]
         ), f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{self.mask.shape}"
-
-        out = video * 1
+        
+        self.mask = cv2.medianBlur(self.mask, 5)
+        
+        out = video * self.mask
         out = out.astype(np.uint8)
         log.debug(f"Returning filtered video of shape {out.shape}")
         log.debug(f"Video dtype {out.dtype}")
@@ -88,7 +88,6 @@ class DFTFilter(OfflineFilter):
         fps: int,
     ) -> np.ndarray:
 
-        video = video.astype(np.float32)
         # take the fft of the video
         video_fft = fft(video, axis=0, workers=-1)
         video_fft = fftshift(video_fft, axes=0)  # 0 freq at center

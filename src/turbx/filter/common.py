@@ -49,7 +49,7 @@ class MeanFilter(OfflineFilter):
             fps = self.fps
 
         self.calculate(video, fps)
-        filtered_video = np.multiply(video, self.mask, dtype=np.uint32)
+        filtered_video = np.multiply(video, self.mask, dtype=np.uint8)
         filtered_video = filtered_video.astype(np.uint8)
         log.debug(f"Mean background filtered video of shape: {filtered_video.shape}")
         return filtered_video
@@ -67,7 +67,7 @@ class MeanFilter(OfflineFilter):
         """
         self.fps = fps
         # calculate background
-        mean = np.mean(video, axis=0)
+        mean = np.mean(video, axis=0, dtype=np.float16)
         avg_value = np.mean(mean)
 
         # remove background
@@ -107,7 +107,7 @@ class IntensityFilter(OfflineFilter):
             fps = self.fps
         self.mask = self.calculate(video, fps)
 
-        out = np.multiply(video, self.mask, dtype=np.uint32)
+        out = np.multiply(video, self.mask, dtype=np.uint8)
         out = out.astype(np.uint8)
         log.debug(f"Intensity filtered video of shape: {out.shape}")
         return out
@@ -119,8 +119,7 @@ class IntensityFilter(OfflineFilter):
     ):
         self.fps = fps
         # video = video.astype(np.float32)
-        video = video.astype(np.float16)
-        std_val = np.max(np.std(video, axis=0))
+        std_val = np.max(np.std(video, axis=0, dtype=np.float16))
         max_val = np.max(video, axis=0)
 
         log.debug(f"Max value: {np.max(max_val)}")
@@ -136,19 +135,18 @@ class IntensityFilter(OfflineFilter):
 
         # only keep pixels in the video that are within std of their max
         # apply mask in apply
-        mask = video > (max_val - std_val)
-        self.mask = mask
+        self.mask = video > (max_val - std_val)
 
-        log.debug(f"Generated intensity filter mask of shape: {mask.shape}")
+        log.debug(f"Generated intensity filter mask of shape: {self.mask.shape}")
 
-        return mask
+        return self.mask
 
 
 class ContourFilter:
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
-        min_area: int = 150,
+        min_area: int = 100,
         max_area: int = 1000,
     ):
         """
