@@ -75,7 +75,8 @@ class DFTFilter(OfflineFilter):
         ), f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{self.mask.shape}"
         
         print(np.expand_dims(self.mask, axis=-1).shape)
-        self.mask = cv2.medianBlur(np.expand_dims(self.mask, axis=-1).astype('float32'), 5)
+        self.mask = cv2.medianBlur(np.expand_dims(self.mask, axis=-1).astype('uint8'), 15)
+        cv2.imwrite('test_mask_no smooth.png', self.mask*255)
         
         out = video * self.mask
         out = out.astype(np.uint8)

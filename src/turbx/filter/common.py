@@ -86,7 +86,7 @@ class MeanFilter(OfflineFilter):
         value_channel = np.subtract(value_channel, mean)
         # np.boolean mask, N, W, H, 1
         # difference values > per-pixel standard dev
-        self.mask = value_channel > 2 * np.sqrt(var)
+        self.mask = value_channel > 3 * np.sqrt(var)
 
         return self.mask
 
