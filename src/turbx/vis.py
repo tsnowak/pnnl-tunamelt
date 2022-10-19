@@ -58,6 +58,10 @@ def xywh_to_xyxy(box):
     return ((box[0], box[1]), (box[0] + box[2], box[1] + box[3]))
 
 
+def xyxy_to_xywh(box):
+    return (box[0][0], box[0][1], box[0][0] - box[1][0], box[0][1] - box[1][1])
+
+
 def draw_pred(image, frame_pred, color=(0, 255, 0)):
     """
     Draws prediction bounding box on the images

@@ -1,9 +1,10 @@
 from typing import Optional, List, Tuple
 import numpy as np
 import cv2
-import pywt
+from findpeaks import findpeaks
 from turbx import log
 from turbx.filter.base import OfflineFilter
+from turbx.vis import xyxy_to_xywh
 
 
 class MeanFilter(OfflineFilter):
@@ -11,6 +12,7 @@ class MeanFilter(OfflineFilter):
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
+        std_devs: Optional[int] = 2.5,
     ):
         """
         Removes static background by zeroing pixels in frames which .
@@ -27,6 +29,7 @@ class MeanFilter(OfflineFilter):
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
         self.out_format = "GRAY"
+        self.std_devs = std_devs
 
     def filter(
         self,
@@ -84,12 +87,12 @@ class MeanFilter(OfflineFilter):
         value_channel = np.subtract(value_channel, mean)
         # np.boolean mask, N, W, H, 1
         # difference values > per-pixel standard dev
-        self.mask = value_channel > 2 * np.sqrt(var)
+        self.mask = value_channel > self.std_devs * np.sqrt(var)
 
         return self.mask
 
 
-class DeNoiseFilter(OfflineFilter):
+class NlMeansDenoiseFilter(OfflineFilter):
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
@@ -100,7 +103,6 @@ class DeNoiseFilter(OfflineFilter):
         Args:
             - video: video to filter - Optional(np.array [N, H, W, C] or [N, H, W])
             - fps: fps of video - Optional(int)
-
         Memory Optimized
         """
         super().__init__(video, fps)
@@ -151,9 +153,12 @@ class DeNoiseFilter(OfflineFilter):
             - fps: fps of value_channel - int
         """
         self.fps = fps
+
         ## per frame NlMeansDenoising -> VERY SLOW
         for i, frame in enumerate(value_channel):
-            frame = cv2.fastNlMeansDenoising(frame, None, 20, 21, 41)
+            # frame = cv2.fastNlMeansDenoising(frame, None, 20, 31, 61)
+            frame = cv2.medianBlur(frame, 11)
+            # frame = cv2.medianBlur(frame, 11)
             value_channel[i, ...] = frame
         ## time-windowed NlMeansDenoising -> VERY SLOW
         # batch_size = 5
@@ -176,7 +181,82 @@ class DeNoiseFilter(OfflineFilter):
 
         ## Wavelet denoising
 
-        print(value_channel.shape)
+        return value_channel
+
+
+class FindPeaksFilter(OfflineFilter):
+    def __init__(
+        self,
+        video: Optional[np.ndarray] = None,
+        fps: Optional[int] = None,
+        method: Optional[str] = "lee",
+    ):
+        """
+        Removes noise from the video.
+        Args:
+            - video: video to filter - Optional(np.array [N, H, W, C] or [N, H, W])
+            - fps: fps of video - Optional(int)
+
+        Memory Optimized
+        """
+        super().__init__(video, fps)
+        if self.mask is None:
+            log.debug(f"Did not generate {self.__class__} filter.")
+        else:
+            log.debug(f"Generated {self.__class__} filter mask.")
+        self.fps = fps
+        self.out_format = "GRAY"
+        self.method = findpeaks(
+            method="topology",
+            scale=False,
+            denoise=method,
+            togray=True,
+            imsize=False,
+            window=15,
+        )
+
+    def filter(
+        self,
+        video: np.ndarray,
+        fps: Optional[int] = None,
+    ):
+        """
+        Applies the mask to filter the video
+        Args:
+            - video: video to filter - np.array [N, H, W, C] or [N, H, W]
+            - fps: fps of video - int
+        """
+        if fps is None:
+            if self.fps is None:
+                raise ValueError("fps not given.")
+            fps = self.fps
+
+        video = video.copy()
+        if len(video.shape) == 4:
+            filtered_video = self.calculate(video[..., 2], fps)
+        elif len(video.shape) == 3:
+            filtered_video = self.calculate(video, fps)
+        else:
+            raise ValueError(
+                "Input video is neither NxWxHxC nor NxWxH. Verify its structure."
+            )
+        log.debug(f"Noise filtered video of shape: {filtered_video.shape}")
+        return filtered_video
+
+    def calculate(
+        self,
+        value_channel: np.ndarray,
+        fps: int,
+    ):
+        """
+        Calculates the filter mask
+        Args:
+            - value_channel: value_channel to filter - np.array [N, H, W]
+            - fps: fps of value_channel - int
+        """
+        for idx, frame in enumerate(value_channel):
+            out = self.method.fit(frame)
+            value_channel[idx, ...] = out["Xproc"]
 
         return value_channel
 
@@ -186,12 +266,13 @@ class IntensityFilter(OfflineFilter):
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
-        n: Optional[int] = 500,
+        # n: Optional[int] = 500,
+        thresh: Optional[int] = 100,
     ):
         """
         Removes pixels are below
         """
-        self.n = n
+        # self.n = n
         super().__init__(video, fps)
         if self.mask is None:
             log.debug(f"Did not generate {self.__class__} filter.")
@@ -199,6 +280,7 @@ class IntensityFilter(OfflineFilter):
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
         self.out_format = "GRAY"
+        self.thresh = thresh
 
     def filter(
         self,
@@ -210,8 +292,6 @@ class IntensityFilter(OfflineFilter):
                 raise ValueError("fps not given.")
             fps = self.fps
         self.mask = self.calculate(video, fps)
-
-        video = video.astype(np.float32)
         out = np.multiply(video, self.mask)
         out = out.astype(np.uint8)
         log.debug(f"Intensity filtered video of shape: {out.shape}")
@@ -224,14 +304,14 @@ class IntensityFilter(OfflineFilter):
     ):
         self.fps = fps
         # video = video.astype(np.float32)
-        video = video.astype(np.float16)
-        std_val = np.max(np.std(video, axis=0))
-        max_val = np.max(video, axis=0)
+        # video = video.astype(np.float16)
+        # std_val = np.max(np.std(video, axis=0))
+        # max_val = np.max(video, axis=0)
 
-        log.debug(f"Max value: {np.max(max_val)}")
-        # take average of n-largest pixel maxima
-        max_val = np.mean(np.sort(max_val, axis=None)[-self.n :])
-        log.debug(f"std and max: {std_val, max_val}")
+        # log.debug(f"Max value: {np.max(max_val)}")
+        ## take average of n-largest pixel maxima
+        # max_val = np.mean(np.sort(max_val, axis=None)[-self.n :])
+        # log.debug(f"std and max: {std_val, max_val}")
 
         # over entire image
         # only one pixel passes this
@@ -241,7 +321,7 @@ class IntensityFilter(OfflineFilter):
 
         # only keep pixels in the video that are within std of their max
         # apply mask in apply
-        mask = video > (max_val - std_val)
+        mask = video > (self.thresh)
         self.mask = mask
 
         log.debug(f"Generated intensity filter mask of shape: {mask.shape}")
@@ -249,7 +329,7 @@ class IntensityFilter(OfflineFilter):
         return mask
 
 
-class SpeckleFilter(OfflineFilter):
+class DilateErodeFilter(OfflineFilter):
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
@@ -308,8 +388,8 @@ class ContourFilter:
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
-        min_area: int = 150,
-        max_area: int = 1200,
+        min_area: int = 200,
+        max_area: int = 6000,
     ):
         """
         Detect contours of a certain size
@@ -351,3 +431,82 @@ class ContourFilter:
             boxes_per_frame.append(boxes)
 
         return boxes_per_frame
+
+
+class TrackletAssociation:
+    def __init__(
+        self,
+        preds: Optional[List[List]] = None,
+        window: Optional[int] = 3,
+        thresh: Optional[float] = 100.0,
+    ):
+        """
+        preds: List[List] - per-frame bounding boxes
+        #http://vision.cse.psu.edu/courses/Tracking/vlpr12/lzhang_cvpr08global.pdf
+
+        No need for something so powerful - simply want to discard spurious bounding boxes
+        Maintaining offline assumption, could perform forward/backward or iterative refinement of boxes
+        """
+        self.preds = preds
+        self.window = window
+        self.thresh = thresh
+
+    def filter(self, preds: List[List]):
+        self.preds = preds
+        return self.calculate(preds)
+
+    def _xyxy_centroid(self, box: List[List]):
+        x_avg = int((box[0] + box[2]) / 2.0)
+        y_avg = int((box[1] + box[3]) / 2.0)
+        return np.array([x_avg, y_avg], dtype=np.uint16)
+
+    def _distance_cost(self, box1, box2):
+        box1_cent = self._xyxy_centroid(box1)
+        box2_cent = self._xyxy_centroid(box2)
+        # print(f"Centroid: {box1_cent}")
+        # print(f"Centroid: {box2_cent}")
+        return np.sqrt(np.sum(np.square(box1_cent - box2_cent)))
+
+    def _scale_cost(self, box1, box2):
+        box1_scale = np.array(box1, np.int16)[2:]
+        box2_scale = np.array(box2, np.int16)[2:]
+        # print(f"Scale1: {box1_scale}")
+        # print(f"Scale2: {box2_scale}")
+        return np.sqrt(np.sum(np.square(box1_scale - box2_scale)))
+
+    def calculate(self, preds):
+        # initialize with empty first frame of tracks
+        # OMG this doesn't create new []'s len(preds) times, so when one is altered, all are!! Weirdest shit!!
+        # valid_tracks = [[]] * len(preds)
+        valid_tracks = [[] for _ in range(len(preds))]
+
+        # iterate through 2nd frame - end
+        # compare current frames/tracks with previous to consider online application
+        it = range(1, len(preds))
+
+        # iterate over all frames in video
+        for i in it:
+            prior = i - 1
+            f_preds = preds[i]
+            pf_preds = preds[prior]
+
+            # for each box in current frame
+            for f_pred in f_preds:
+                costs = []
+                min_idx = None
+
+                # calculate cost to every prior box
+                for pf_pred in pf_preds:
+                    d_cost = self._distance_cost(f_pred, pf_pred)
+                    s_cost = self._scale_cost(f_pred, pf_pred)
+                    print(f"Dist Cost: {d_cost}; Scale Cost: {s_cost}")
+                    cost = sum([d_cost, s_cost])
+                    costs.append(cost)
+                    min_idx = np.argmin(costs)
+
+                # take lowest cost and if below thresh, append to valid for frame[i]
+                if min_idx:
+                    if costs[min_idx] < self.thresh:
+                        valid_tracks[i] += [f_pred]
+
+        return valid_tracks

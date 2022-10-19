@@ -2,7 +2,7 @@
 Implementation of DFT used to mask pixels exhibiting certain frequencies
 """
 from typing import Optional, Tuple
-
+import cv2
 import numpy as np
 from turbx import log
 from turbx.filter.base import OfflineFilter
@@ -27,8 +27,9 @@ class DFTFilter(OfflineFilter):
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
-        freq_range: Optional[Tuple] = (1.0, 4.0),
+        freq_range: Optional[Tuple] = (1.5, 3.0),
         thresh_func: Optional[str] = "max",
+        mask_smoothing: Optional[int] = 9,
     ):
 
         # range of frequences to filter
@@ -53,6 +54,7 @@ class DFTFilter(OfflineFilter):
 
         self.fps = fps
         self.out_format = "GRAY"
+        self.mask_smoothing = mask_smoothing
 
     def filter(
         self,
@@ -65,14 +67,19 @@ class DFTFilter(OfflineFilter):
             fps = self.fps
 
         self.calculate(video, fps)
-
-        video = video.astype(np.float32)
+        # video = video.astype(np.float32)
+        cv2.imwrite("dft_mask_original.png", self.mask * 255)
+        # added smoothing to turbine mask to prevent noisy cancellation
+        self.mask = cv2.medianBlur(
+            np.expand_dims(self.mask, axis=-1).astype("uint8"), self.mask_smoothing
+        )
         inv_mask = np.abs(self.mask - 1.0)
 
         assert (
             video.shape[1:3] == self.mask.shape[:2]
         ), f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{self.mask.shape}"
 
+        cv2.imwrite("dft_mask_smooth.png", self.mask * 255)
         out = video * inv_mask
         out = out.astype(np.uint8)
         log.debug(f"Returning filtered video of shape {out.shape}")

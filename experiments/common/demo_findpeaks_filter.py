@@ -2,9 +2,10 @@ from pathlib import Path
 from typing import OrderedDict
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
-from turbx.filter import common, dft
+from turbx.filter import common
 from turbx.vis import view
 
+## SUPER SLOW
 if __name__ == "__main__":
 
     file_path = f"{REPO_PATH}/data/mp4"
@@ -17,21 +18,19 @@ if __name__ == "__main__":
 
     # initialize filters
     mean_filter = common.MeanFilter(fps=fps)
-    intensity_filter = common.IntensityFilter(fps=fps)
-    turbine_filter = dft.DFTFilter(fps=fps)
+    fp_filter = common.FindPeaksFilter(fps=fps, method="lee")
     contour_filter = common.ContourFilter()
 
     # define filter order
     filter_order = [
         "original",
-        intensity_filter,
         mean_filter,
-        turbine_filter,
+        fp_filter,
         contour_filter,
     ]
 
     # get video, label
-    video, label = dataloader[0]
+    video, label = dataloader[3]
     log.info(f"Using video {label['video_id']}...")
 
     # calculate filters in order

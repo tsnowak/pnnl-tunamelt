@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 from typing import OrderedDict
 from turbx import REPO_PATH, log
@@ -5,6 +6,7 @@ from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
 from turbx.vis import view
 
+## SUPER SLOW
 if __name__ == "__main__":
 
     file_path = f"{REPO_PATH}/data/mp4"
@@ -17,17 +19,21 @@ if __name__ == "__main__":
 
     # initialize filters
     mean_filter = common.MeanFilter(fps=fps)
-    intensity_filter = common.IntensityFilter(fps=fps)
     turbine_filter = dft.DFTFilter(fps=fps)
+    nlmeans_filter = common.NlMeansDenoiseFilter(fps=fps)
+    intensity_filter = common.IntensityFilter(fps=fps)
     contour_filter = common.ContourFilter()
+    tracklet_association = common.TrackletAssociation()
 
     # define filter order
     filter_order = [
         "original",
-        intensity_filter,
-        mean_filter,
-        turbine_filter,
-        contour_filter,
+        "turbine_filter",
+        "mean_filter",
+        "intensity_filter",
+        "nlmeans_filter",
+        "contour_filter",
+        # tracklet_association,
     ]
 
     # get video, label
@@ -37,14 +43,14 @@ if __name__ == "__main__":
     # calculate filters in order
     log.info("Calculating filters...")
     outputs = OrderedDict()
-    for idx, filter in enumerate(filter_order):
-        filter_name = filter if isinstance(filter, str) else filter.__class__.__name__
+    for idx, filter_name in enumerate(filter_order):
         log.info(f"\tCalculating {filter_name}...")
-        if filter == "original":
+        if filter_name == "original":
             outputs["original"] = video[..., 2]
         else:
             tmp = list(outputs.items())[-1]
-            outputs[filter.__class__.__name__] = filter.filter(tmp[1])
+            # outputs[filter_name] = filter.filter(tmp[1])
+            outputs[filter_name] = eval(filter_name).filter(tmp[1])
 
     # get filter outputs in order
     display = OrderedDict()
@@ -53,10 +59,16 @@ if __name__ == "__main__":
     for name, output in outputs.items():
         if name == "original":
             display[name] = numpy_to_cv2(video, "HSV", "BGR")
-        elif name == "ContourFilter":
+        elif eval(name).__class__.__name__ == "ContourFilter":
             pred = output
+            # continue
+        elif eval(name).__class__.__name__ == "TrackletAssociation":
+            # pred = output
+            continue
         else:
-            display[name] = numpy_to_cv2(output, filter_order[idx].out_format, "BGR")
+            display[name] = numpy_to_cv2(
+                output, eval(filter_order[idx]).out_format, "BGR"
+            )
         idx += 1
 
     # display or save filters
@@ -66,6 +78,7 @@ if __name__ == "__main__":
         label,
         pred,
         fps,
+        # params,
         show=True,
         save=False,
         out_path=Path(),

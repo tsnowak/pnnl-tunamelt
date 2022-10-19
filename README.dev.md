@@ -7,19 +7,45 @@
   - [*] Add out_format variable to filter classes
   - [*] Convert errode/dilate to cv2.opening (see docs)
     - [*] Erodes fish too much - also why are scale numbers not fully filtered by mean filter
-    - [] Not temporal and insufficient; other options in findpeaks package
+    - [*] Not temporal and insufficient; other options in findpeaks package
+  - [*] Made demos extensible to general filters
+    - [*] demo: dft, mean, contour; run: dft ... refactored
+  - [*] Test findpeaks filters
+    - [*] VERY VERY SLOW (20s / frame?)
+  - [*] Revisiting NLMeans filter from OpenCV -> keep; strong filter
+    - [*] Slow, but rather effective
+    - [*] Testing with turbine + intensity filter
+      - [*] Intensity filter debug after refactors (use simple fixed thresh to start?) -> Basic hard threshold working pretty well
+      - [*] NLMeans is the major bottleneck, but is helping a lot with noise despeckling
 
-- [*] Made demos extensible to general filters
+- 10/13/2022
 
-  - [*] demo: dft, mean, contour; run: dft ... refactored
+  - [*] Implementing tracklet association filter -> only keep bounding boxes that are consistent
+    - [] Only implemented for current-prior tracklet scale and distance confirmation->I'd love for it to be n-windowed and to associate across n-frames
 
 - [] Ground filters in existent methods to reference and describe mathematically in paper
   - [] Background filter
   - [] Intensity filter?
-- [] Improve filter output (lots of noise/speckle)
-  - [] Implement speckle filter
+- [*] Improve filter output (lots of noise/speckle)
+  - [*] Implement speckle filter -> NlMeans but very slow
 - [] Implement and test additional filters
   - [] Finish implementing PIV filter
+- [] Batch videos that are too large
+- [] Record params values in results
+- [] Record timing of runs
+
+- 10/18/2022
+
+  - [*] Finalize experiments list
+    - [ ] Frames removed metric (per frame)
+    - [ ] False negative rate (per track)
+    - [ ] T/F P/N per frames and tracks
+    - [ ] Hyper-parameter tuning
+    - [ ] ROC curve per parameter tuning
+    - [ ] Turbine filter vs. no turbine filter ablation (which metric?)
+  - [*] Min/max contour
+  - [*] Turbine mask smoothing
+  - [*] Expose h-params of each filter
 
 # Video Labels
 
