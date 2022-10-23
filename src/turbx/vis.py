@@ -132,6 +132,7 @@ def view(
     label: Union[Dict, None],
     pred: Union[List, None],
     fps: int,
+    params: Dict = {},
     loop: bool = True,
     show: bool = True,
     save: bool = True,
@@ -187,7 +188,7 @@ def view(
                     {
                         "label": label_dict,
                         "prediction": pred,
-                        "parameters": {"TODO": None},
+                        "parameters": params,
                         "results": tfpnr_dict,
                     },
                     indent=4,

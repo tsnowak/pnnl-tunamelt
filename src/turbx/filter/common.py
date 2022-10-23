@@ -1,4 +1,4 @@
-from typing import Optional, List, Tuple
+from typing import Optional, List, Tuple, Dict
 import numpy as np
 import cv2
 from findpeaks import findpeaks
@@ -12,7 +12,7 @@ class MeanFilter(OfflineFilter):
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
-        std_devs: Optional[int] = 2.5,
+        params: Optional[Dict] = {"std_devs": 2.5},
     ):
         """
         Removes static background by zeroing pixels in frames which .
@@ -29,7 +29,7 @@ class MeanFilter(OfflineFilter):
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
         self.out_format = "GRAY"
-        self.std_devs = std_devs
+        self.std_devs = params["std_devs"]
 
     def filter(
         self,
@@ -92,11 +92,12 @@ class MeanFilter(OfflineFilter):
         return self.mask
 
 
-class NlMeansDenoiseFilter(OfflineFilter):
+class GaussianBlurDenoiseFilter(OfflineFilter):
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
+        params: Optional[Dict] = {"blur_size": 11},
     ):
         """
         Removes noise from the video.
@@ -112,6 +113,83 @@ class NlMeansDenoiseFilter(OfflineFilter):
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
         self.out_format = "GRAY"
+        self.blur_size = params["blur_size"]
+
+    def filter(
+        self,
+        video: np.ndarray,
+        fps: Optional[int] = None,
+    ):
+        """
+        Applies the mask to filter the video
+        Args:
+            - video: video to filter - np.array [N, H, W, C] or [N, H, W]
+            - fps: fps of video - int
+        """
+        if fps is None:
+            if self.fps is None:
+                raise ValueError("fps not given.")
+            fps = self.fps
+
+        video = video.copy()
+        if len(video.shape) == 4:
+            filtered_video = self.calculate(video[..., 2], fps)
+        elif len(video.shape) == 3:
+            filtered_video = self.calculate(video, fps)
+        else:
+            raise ValueError(
+                "Input video is neither NxWxHxC nor NxWxH. Verify its structure."
+            )
+        log.debug(f"Noise filtered video of shape: {filtered_video.shape}")
+        return filtered_video
+
+    def calculate(
+        self,
+        value_channel: np.ndarray,
+        fps: int,
+    ):
+        """
+        Calculates the filter mask
+        Args:
+            - value_channel: value_channel to filter - np.array [N, H, W, C]
+            - fps: fps of value_channel - int
+        """
+        self.fps = fps
+
+        for i, frame in enumerate(value_channel):
+            frame = cv2.medianBlur(frame, self.blur_size)
+            value_channel[i, ...] = frame
+        return value_channel
+
+
+class NlMeansDenoiseFilter(OfflineFilter):
+    def __init__(
+        self,
+        video: Optional[np.ndarray] = None,
+        fps: Optional[int] = None,
+        params: Optional[Dict] = {
+            "filter_strength": 20,
+            "template_size": 31,
+            "search_size": 61,
+        },
+    ):
+        """
+        Removes noise from the video.
+        Args:
+            - video: video to filter - Optional(np.array [N, H, W, C] or [N, H, W])
+            - fps: fps of video - Optional(int)
+        Memory Optimized
+        """
+        super().__init__(video, fps)
+        if self.mask is None:
+            log.debug(f"Did not generate {self.__class__} filter.")
+        else:
+            log.debug(f"Generated {self.__class__} filter mask.")
+        self.fps = fps
+        self.out_format = "GRAY"
+        self.filter_strength = params["filter_strength"]
+        self.template_size = params["template_size"]
+        self.window_size = params["window_size"]
 
     def filter(
         self,
@@ -156,10 +234,11 @@ class NlMeansDenoiseFilter(OfflineFilter):
 
         ## per frame NlMeansDenoising -> VERY SLOW
         for i, frame in enumerate(value_channel):
-            # frame = cv2.fastNlMeansDenoising(frame, None, 20, 31, 61)
-            frame = cv2.medianBlur(frame, 11)
-            # frame = cv2.medianBlur(frame, 11)
+            frame = cv2.fastNlMeansDenoising(
+                frame, None, self.filter_strength, self.template_size, self.window_size
+            )
             value_channel[i, ...] = frame
+
         ## time-windowed NlMeansDenoising -> VERY SLOW
         # batch_size = 5
         # for i in range(len(value_channel)):
@@ -178,8 +257,6 @@ class NlMeansDenoiseFilter(OfflineFilter):
         #        batch, avg_frame, batch_size, None, 4, 7, 35
         #    )
         #    value_channel[i, ...] = frame
-
-        ## Wavelet denoising
 
         return value_channel
 
@@ -267,7 +344,7 @@ class IntensityFilter(OfflineFilter):
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
         # n: Optional[int] = 500,
-        thresh: Optional[int] = 100,
+        params: Optional[Dict] = {"thresh": 100},
     ):
         """
         Removes pixels are below
@@ -280,7 +357,7 @@ class IntensityFilter(OfflineFilter):
             log.debug(f"Generated {self.__class__} filter mask.")
         self.fps = fps
         self.out_format = "GRAY"
-        self.thresh = thresh
+        self.thresh = params["thresh"]
 
     def filter(
         self,
@@ -388,14 +465,13 @@ class ContourFilter:
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
-        min_area: int = 200,
-        max_area: int = 6000,
+        params: Optional[Dict] = {"min_area": 200, "max_area": 6000},
     ):
         """
         Detect contours of a certain size
         """
-        self.min_area = min_area
-        self.max_area = max_area
+        self.min_area = params["min_area"]
+        self.max_area = params["max_area"]
 
     def filter(
         self,
@@ -437,8 +513,7 @@ class TrackletAssociation:
     def __init__(
         self,
         preds: Optional[List[List]] = None,
-        window: Optional[int] = 3,
-        thresh: Optional[float] = 100.0,
+        params: Optional[Dict] = {"window": 3, "thresh": 100.0},
     ):
         """
         preds: List[List] - per-frame bounding boxes
@@ -448,8 +523,8 @@ class TrackletAssociation:
         Maintaining offline assumption, could perform forward/backward or iterative refinement of boxes
         """
         self.preds = preds
-        self.window = window
-        self.thresh = thresh
+        self.window = params["window"]
+        self.thresh = params["thresh"]
 
     def filter(self, preds: List[List]):
         self.preds = preds

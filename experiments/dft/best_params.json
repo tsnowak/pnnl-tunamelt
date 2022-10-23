@@ -1,0 +1,22 @@
+{
+    "mean_filter": {
+        "std_devs": 2.5
+    },
+    "turbine_filter": {
+        "freq_range": [
+            1.5,
+            3.0
+        ],
+        "mask_smoothing": 9
+    },
+    "denoise_filter": {
+        "blur_size": 11
+    },
+    "intensity_filter": {
+        "thresh": 11
+    },
+    "contour_filter": {
+        "min_area": 200,
+        "max_area": 6000
+    }
+}

@@ -1,7 +1,7 @@
 """
 Implementation of DFT used to mask pixels exhibiting certain frequencies
 """
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict
 import cv2
 import numpy as np
 from turbx import log
@@ -27,13 +27,12 @@ class DFTFilter(OfflineFilter):
         self,
         video: Optional[np.ndarray] = None,
         fps: Optional[int] = None,
-        freq_range: Optional[Tuple] = (1.5, 3.0),
         thresh_func: Optional[str] = "max",
-        mask_smoothing: Optional[int] = 9,
+        params: Optional[Dict] = {"freq_range": (1.5, 3.0), "mask_smoothing": 9},
     ):
 
         # range of frequences to filter
-        self.freq_range = freq_range
+        self.freq_range = params["freq_range"]
 
         # method used to determine when magnitude is above threshold
         if thresh_func == "max":
@@ -54,7 +53,7 @@ class DFTFilter(OfflineFilter):
 
         self.fps = fps
         self.out_format = "GRAY"
-        self.mask_smoothing = mask_smoothing
+        self.mask_smoothing = params["mask_smoothing"]
 
     def filter(
         self,

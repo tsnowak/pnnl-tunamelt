@@ -1,4 +1,6 @@
 import os
+import sys
+import json
 from datetime import datetime
 from pathlib import Path
 from typing import OrderedDict
@@ -24,18 +26,34 @@ if __name__ == "__main__":
     fps = 10
     frame_delay = 1.0 / fps
 
+    # set params
+    params = {
+        "mean_filter": {"std_devs": 2.5},
+        "turbine_filter": {"freq_range": (1.5, 3.0), "mask_smoothing": 9},
+        "denoise_filter": {"blur_size": 11},
+        "intensity_filter": {"thresh": 11},
+        "contour_filter": {"min_area": 200, "max_area": 6000},
+    }
+
     # initialize filters
-    mean_filter = common.MeanFilter(fps=fps)
-    turbine_filter = dft.DFTFilter(fps=fps)
-    intensity_filter = common.IntensityFilter(fps=fps)
-    contour_filter = common.ContourFilter()
+    mean_filter = common.MeanFilter(fps=fps, params=params["mean_filter"])
+    turbine_filter = dft.DFTFilter(fps=fps, params=params["turbine_filter"])
+    denoise_filter = common.GaussianBlurDenoiseFilter(
+        fps=fps, params=params["denoise_filter"]
+    )
+    intensity_filter = common.IntensityFilter(
+        fps=fps, params=params["intensity_filter"]
+    )
+    contour_filter = common.ContourFilter(params=params["contour_filter"])
 
     # define filter order
     filter_order = [
         "original",
-        mean_filter,
-        turbine_filter,
-        contour_filter,
+        "turbine_filter",
+        "mean_filter",
+        "intensity_filter",
+        "denoise_filter",
+        "contour_filter",
     ]
 
     # get and operate on video, label pairs
@@ -48,16 +66,13 @@ if __name__ == "__main__":
 
         log.info("Calculating filters...")
         outputs = OrderedDict()
-        for idx, filter in enumerate(filter_order):
-            filter_name = (
-                filter if isinstance(filter, str) else filter.__class__.__name__
-            )
+        for idx, filter_name in enumerate(filter_order):
             log.info(f"\tCalculating {filter_name}...")
             if filter == "original":
                 outputs["original"] = video[..., 2]
             else:
                 tmp = list(outputs.items())[-1]
-                outputs[filter.__class__.__name__] = filter.filter(tmp[1])
+                outputs[filter_name] = eval(filter_name).filter(tmp[1])
 
         # get filter outputs in order
         display = OrderedDict()
@@ -66,11 +81,15 @@ if __name__ == "__main__":
         for name, output in outputs.items():
             if name == "original":
                 display[name] = numpy_to_cv2(video, "HSV", "BGR")
-            elif name == "ContourFilter":
+            elif eval(name).__class__.__name__ == "ContourFilter":
                 pred = output
+                # continue
+            elif eval(name).__class__.__name__ == "TrackletAssociation":
+                # pred = output
+                continue
             else:
                 display[name] = numpy_to_cv2(
-                    output, filter_order[idx].out_format, "BGR"
+                    output, eval(filter_order[idx]).out_format, "BGR"
                 )
             idx += 1
 
@@ -80,6 +99,7 @@ if __name__ == "__main__":
             label,
             pred,
             fps,
+            params=params,
             show=False,
             save=True,
             out_path=Path(),
