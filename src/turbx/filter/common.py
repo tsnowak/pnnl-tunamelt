@@ -157,6 +157,7 @@ class DeNoiseFilter(OfflineFilter):
         for i, frame in enumerate(value_channel):
             frame = cv2.fastNlMeansDenoising(frame, None, 20, 21, 41)
             value_channel[i, ...] = frame
+        
         ## time-windowed NlMeansDenoising -> VERY SLOW
         # batch_size = 5
         # for i in range(len(value_channel)):
@@ -307,8 +308,8 @@ class ContourFilter:
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
-        min_area: int = 150,
-        max_area: int = 1200,
+        min_area: int = 36,
+        max_area: int = 14355,
     ):
         """
         Detect contours of a certain size
