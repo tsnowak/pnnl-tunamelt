@@ -67,7 +67,7 @@ class DFTFilter(OfflineFilter):
 
         self.calculate(video, fps)
         # video = video.astype(np.float32)
-        cv2.imwrite("dft_mask_original.png", self.mask * 255)
+        # cv2.imwrite("dft_mask_original.png", self.mask * 255)
         # added smoothing to turbine mask to prevent noisy cancellation
         self.mask = cv2.medianBlur(
             np.expand_dims(self.mask, axis=-1).astype("uint8"), self.mask_smoothing
@@ -78,7 +78,7 @@ class DFTFilter(OfflineFilter):
             video.shape[1:3] == self.mask.shape[:2]
         ), f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{self.mask.shape}"
 
-        cv2.imwrite("dft_mask_smooth.png", self.mask * 255)
+        # cv2.imwrite("dft_mask_smooth.png", self.mask * 255)
         out = video * inv_mask
         out = out.astype(np.uint8)
         log.debug(f"Returning filtered video of shape {out.shape}")

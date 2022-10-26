@@ -47,6 +47,13 @@
   - [*] Turbine mask smoothing
   - [*] Expose h-params of each filter
 
+- 10/26/2022
+  - [] Push dirty repo into devel branch and prune master branch
+  - [] Refactor metrics in vis.py into metrics.py
+  - [] Write parameter search analysis jupyter notebook
+  - [] Write tracklet code? (really want to)
+  - [] Write test set video batching
+
 # Video Labels
 
 ## Processed Label Structure

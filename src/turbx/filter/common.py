@@ -80,7 +80,7 @@ class MeanFilter(OfflineFilter):
         var = np.var(value_channel.astype(np.float64), axis=0)
         # avg_value := single average pixel value for the value_channel
         # avg_mean = np.mean(mean)
-        avg_var = np.mean(var)
+        # avg_var = np.mean(var)
 
         # remove background
         # only compare h,s,V - Value values (N, W, H, 1)
@@ -526,7 +526,7 @@ class TrackletAssociation:
         self.window = params["window"]
         self.thresh = params["thresh"]
 
-    def filter(self, preds: List[List]):
+    def filter(self, preds: List[List], window_length: int = 4):
         self.preds = preds
         return self.calculate(preds)
 
@@ -549,21 +549,22 @@ class TrackletAssociation:
         # print(f"Scale2: {box2_scale}")
         return np.sqrt(np.sum(np.square(box1_scale - box2_scale)))
 
-    def calculate(self, preds):
+    def calculate(self, preds, window_length=4):
         # initialize with empty first frame of tracks
         # OMG this doesn't create new []'s len(preds) times, so when one is altered, all are!! Weirdest shit!!
         # valid_tracks = [[]] * len(preds)
         valid_tracks = [[] for _ in range(len(preds))]
 
-        # iterate through 2nd frame - end
-        # compare current frames/tracks with previous to consider online application
-        it = range(1, len(preds))
+        # define window of frames to consider
+        window = window_length - 1
+        assert window >= 0, "window_length must be greater than or equal to 1"
+        it = range(window, len(preds))
 
         # iterate over all frames in video
         for i in it:
-            prior = i - 1
+            prior = i - window
             f_preds = preds[i]
-            pf_preds = preds[prior]
+            pf_preds = preds[prior:i]
 
             # for each box in current frame
             for f_pred in f_preds:
@@ -571,13 +572,14 @@ class TrackletAssociation:
                 min_idx = None
 
                 # calculate cost to every prior box
-                for pf_pred in pf_preds:
-                    d_cost = self._distance_cost(f_pred, pf_pred)
-                    s_cost = self._scale_cost(f_pred, pf_pred)
-                    print(f"Dist Cost: {d_cost}; Scale Cost: {s_cost}")
-                    cost = sum([d_cost, s_cost])
-                    costs.append(cost)
-                    min_idx = np.argmin(costs)
+                for frame_preds in pf_preds:
+                    for pf_pred in frame_preds:
+                        d_cost = self._distance_cost(f_pred, pf_pred)
+                        s_cost = self._scale_cost(f_pred, pf_pred)
+                        print(f"Dist Cost: {d_cost}; Scale Cost: {s_cost}")
+                        cost = sum([d_cost, s_cost])
+                        costs.append(cost)
+                        min_idx = np.argmin(costs)
 
                 # take lowest cost and if below thresh, append to valid for frame[i]
                 if min_idx:

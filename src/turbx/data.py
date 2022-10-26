@@ -123,6 +123,9 @@ class DataLoader:
         else:
             raise StopIteration
 
+    def reset(self):
+        self._idx = 0
+
 
 def find_files(path, file_type=".mp4"):
     """

@@ -1,7 +1,7 @@
 import logging
 import json
 from pathlib import Path
-from typing import List, Tuple, Union, Dict
+from typing import List, Tuple, Union, Dict, Optional
 import sys
 from multiprocessing import Process, Pool
 import psutil
@@ -15,76 +15,158 @@ from matplotlib import pyplot as plt
 from scipy.fft import fft, fftfreq, fftn, fftshift
 
 from turbx import log
-from turbx.metrics import boxes_to_binary, tfpnr
+from turbx.metrics import (
+    calc_box_area,
+    boxes_to_binary,
+    target_detection_rate,
+    tfpnr,
+)
 
 log.setLevel(logging.INFO)
 
 
-def plot_label_and_pred(label: List, pred: List):
-    # convert to per frame binary target presence labels
-    binary_label = boxes_to_binary(label)
-    binary_pred = boxes_to_binary(pred)
-    # calculare TPR and FPR metrics
-    tfpnr_dict = tfpnr(binary_label, binary_pred)
-
-    # plot binary per frame results
-    plt.figure("per_frame")
-    plt.plot(binary_label)
-    plt.plot(binary_pred)
-
-    plt.figure("metrics")
-    keys = ["tpr", "tnr", "fpr", "fnr"]
-    data = [tfpnr_dict[k] for k in keys]
-    plt.bar(keys, data)
-    plt.ylim(bottom=0.0, top=1.0)
-
-    plt.show(block=False)
-    return binary_label, binary_pred, tfpnr_dict
-
-
-def label_to_per_frame_list(label: Dict):
+# TODO: in progress
+def viz_metrics_results(
+    label: Union[Dict, None],
+    pred: Union[List, None],
+    params: Dict = {},
+    show: bool = True,
+    save: bool = True,
+    out_path: Union[Path, None] = None,
+):
     """
-    Returns a list of bounding boxes per frame
+    Results display. Create and save plots of results
     """
-    boxes = [[] for _ in range(label["video_length"])]
+    # plot binary label and predictions
+    if (label is None) or (pred is None):
+        log.info("Skipping metrics because either label or predictions is not given")
+        return None
+
+    # calculates per frame average target size, video min, max, avg
+    per_frame_avg_size, min_size, max_size, avg_size = calc_size(label)
+    # calculate # frames removed using predictions
+    _, n_pos_dets, n_neg_dets = calc_frames_removed(pred)
+    # calculates and show/saves true/false positive/negative rates
+    binary_label, binary_pred, tfpnr_dict = calc_tfpnr(label, pred)
+    # calculates # unique targets, # detections of targets, and per video target detection rate
+    unique_targs, det_targs, tdr = calc_tdr(label, pred)
+    perc_frames_removed = n_neg_dets / len(binary_pred)
+
+    # TODO: refactor saving of results
+    # save results to json
+    results = {
+        "per_frame_results": tfpnr_dict,
+        "per_target_results": (unique_targs, det_targs, tdr),
+    }
+    with open(f"{str(out_path)}/{label['filename']}.results.json", "w") as f:
+        json_content = json.dumps(
+            {
+                "label": label,
+                "prediction": pred,
+                "parameters": params,
+                "results": results,
+            },
+            indent=4,
+        )
+        outputs.update({"results": results})
+        f.write(json_content)
+
+
+def write_results(
+    params: Dict, label: Dict, pred: List, out_path: Optional[Union[str, Path]] = ""
+):
+    with open(f"{str(out_path)}/{label['filename']}.results.json", "w") as f:
+        json_content = json.dumps(
+            {
+                "label": label,
+                "prediction": pred,
+                "parameters": params,
+            },
+            indent=4,
+        )
+        f.write(json_content)
+
+
+def viz_video_results(
+    videos: Dict,
+    label: Union[Dict, None],
+    pred: Union[List, None],
+    fps: int,
+    params: Dict = {},
+    loop: bool = True,
+    show: bool = True,
+    save: bool = True,
+    out_path: Union[Path, None] = None,
+    video_type: str = ".mp4",
+):
+    """
+    Video results display. Create pane per filtered video with labels
+    """
+
+    # bounds length variable
+    assert len(videos) != 0, "No videos given. Exiting."
+
+    # process labels into list of bboxes (but preservice dictionary)
+    if label is not None:
+        label = label_to_per_frame_list(label)
+
+    # launch separate processes to save videos
+    if save:
+        pool = save_videos(
+            videos, label, pred, fps, out_path=out_path, video_type=video_type
+        )
+
+    # display videos
+    if show:
+        display_videos(videos, label, pred, fps, loop=loop)
+
+    # cleanly exit after videos are saved
+    if save:
+        log.info("Waiting for videos to write...")
+        pool.join()
+        log.info("Done writing videos")
+
+
+def calc_size(label: Dict):
+    """
+    Calculate per frame average target size, video min size, video max size, and video average size
+    """
+    min_size, max_size, avg_size = None, None, None
+    per_target_size = []
+    per_frame_avg_size = [[] for _ in range(label["video_length"])]
     for track in label["tracks"]:
         for frame in track["frames"]:
-            boxes[frame["frame"]].append(frame["box"])
-
-    return boxes
-
-
-def xywh_to_xyxy(box):
-    return ((box[0], box[1]), (box[0] + box[2], box[1] + box[3]))
-
-
-def xyxy_to_xywh(box):
-    return (box[0][0], box[0][1], box[0][0] - box[1][0], box[0][1] - box[1][1])
+            box_area = calc_box_area(frame["box"])
+            per_frame_avg_size[frame["frame"]].append(box_area)
+            per_target_size.append(box_area)
+    per_frame_avg_size = [sum(x) / len(x) for x in per_frame_avg_size]
+    min_size = min(per_target_size)
+    max_size = max(per_target_size)
+    avg_size = sum(per_target_size) / len(per_target_size)
+    return per_frame_avg_size, min_size, max_size, avg_size
 
 
-def draw_pred(image, frame_pred, color=(0, 255, 0)):
-    """
-    Draws prediction bounding box on the images
-    """
-    # grayscale - box should be white
-    if len(image.shape) != 3:
-        color = (255, 255, 255)
-    for box in frame_pred:
-        box = xywh_to_xyxy(box)
-        image = cv2.rectangle(image, box[0], box[1], color, 4)
-    return image
+def calc_frames_removed(pred: List):
+    binary_preds = boxes_to_binary(pred)
+    pos_dets = [x for x in binary_preds if x == 1]
+    neg_dets = [x for x in binary_preds if x == 0]
+    return binary_preds, len(pos_dets), len(neg_dets)
 
 
-def draw_label(image, frame_label, color=(0, 0, 255)):
-    """
-    Draws label bounding box on the images
-    """
-    # grayscale - box should be white
-    if len(image.shape) != 3:
-        color = (255, 255, 255)
-    for box in frame_label:
-        image = cv2.rectangle(image, box[0], box[1], color, 4)
-    return image
+def save_videos(videos, label, pred, fps, out_path=Path(), video_type=".mp4"):
+    procs = []
+    procs = len(videos) if len(videos) < psutil.cpu_count() else psutil.cpu_count()
+    args = [
+        (v, name, fps, label, pred, len(v), out_path, video_type)
+        for name, v in videos.items()
+    ]
+    # single process
+    # [write_video(*arg) for arg in args]
+    # multi-process
+    pool = Pool(processes=procs)
+    pool.starmap_async(func=write_video, iterable=iter(args))
+    pool.close()
+    return pool
 
 
 def write_video(
@@ -127,147 +209,140 @@ def write_video(
     log.info(f"Finished writing {name}{video_type}")
 
 
-def view(
-    videos: Dict,
-    label: Union[Dict, None],
-    pred: Union[List, None],
-    fps: int,
-    params: Dict = {},
-    loop: bool = True,
-    show: bool = True,
-    save: bool = True,
-    out_path: Union[Path, None] = None,
-    video_type: str = ".mp4",
-):
+def display_videos(videos, label, pred, fps, loop=True):
     """
-    Results display. Create pane per filtered video and for plot of results
+    display videos and label/preds in either a loop or once
     """
-
-    # bounds length variable
-    assert len(videos) != 0, "No videos given. Exiting."
-
-    label_dict = label
-    if label is not None:
-        label = label_to_per_frame_list(label)
-
-    # launch separate processes to save videos
-    # TODO: add annotations to saved videos
-    if save:
-        procs = []
-        procs = len(videos) if len(videos) < psutil.cpu_count() else psutil.cpu_count()
-        args = [
-            (v, name, fps, label, pred, len(v), out_path, video_type)
-            for name, v in videos.items()
-        ]
-        # single process
-        # [write_video(*arg) for arg in args]
-        # multi-process
-        pool = Pool(processes=procs)
-        pool.starmap_async(func=write_video, iterable=iter(args))
-        pool.close()
-
-    # create opencv windows
-    _loc = (0, 0)
-    _win_size = (900, 400)
-    if show:
-        for name, v in videos.items():
-            length = v.shape[0]
-            cv2.namedWindow(f"{name}")
-            cv2.moveWindow(f"{name}", _loc[1], _loc[0])
-            _loc = (_loc[0], _loc[1] + _win_size[1])
-
-    # plot binary label and predictions
-    if (label is not None) and (pred is not None):
-        binary_label, binary_pred, tfpnr_dict = plot_label_and_pred(label, pred)
-        # save results to json
-        if save:
-            with open(
-                f"{str(out_path)}/{label_dict['filename']}.results.json", "w"
-            ) as f:
-                json_content = json.dumps(
-                    {
-                        "label": label_dict,
-                        "prediction": pred,
-                        "parameters": params,
-                        "results": tfpnr_dict,
-                    },
-                    indent=4,
-                )
-                f.write(json_content)
-
     interval = int(1000 / fps)
     frame = 0
-    # loop over videos
+    loc = (0, 0)
+    win_size = (900, 400)
+
+    # create opencv windows
+    for name, v in videos.items():
+        length = v.shape[0]
+        cv2.namedWindow(f"{name}")
+        cv2.moveWindow(f"{name}", loc[1], loc[0])
+        loc = (loc[0], loc[1] + win_size[1])
+
+    # update windows per frame
+    while True:
+        # update frame per pane
+        for name, v in videos.items():
+            image = v[frame]
+            if label is not None:
+                image = draw_label(image, label[frame])
+            if pred is not None:
+                image = draw_pred(image, pred[frame])
+            cv2.imshow(f"{name}", image)
+
+        # exit on key press
+        if cv2.waitKey(interval) & 0xFF == ord("q"):
+            break
+
+        # increment frame and loop
+        frame += 1
+        if loop and (frame == length):
+            frame = 0
+
+    # cleanly destroy windows
+    plt.close("all")
+    cv2.destroyAllWindows()
+
+
+def calc_tfpnr(label: Dict, pred: List, show=False, save=False, out_path=Path()):
+
+    # only need list of bbox as labels
+    label = label_to_per_frame_list(label)
+
+    # convert to per frame binary target presence labels
+    binary_label = boxes_to_binary(label)
+    binary_pred = boxes_to_binary(pred)
+    # calculare TPR and FPR metrics
+    tfpnr_dict = tfpnr(binary_label, binary_pred)
+
+    # plot binary per frame results
+    plt.figure("per_frame")
+    plt.plot(binary_label)
+    plt.plot(binary_pred)
+
+    plt.figure("metrics")
+    keys = ["tpr", "tnr", "fpr", "fnr"]
+    data = [tfpnr_dict[k] for k in keys]
+    plt.bar(keys, data)
+    plt.ylim(bottom=0.0, top=1.0)
+
     if show:
-        while True:
-
-            # update frame per pane
-            for name, v in videos.items():
-                image = v[frame]
-                if label is not None:
-                    image = draw_label(image, label[frame])
-                if pred is not None:
-                    image = draw_pred(image, pred[frame])
-                cv2.imshow(f"{name}", image)
-
-            # exit on key press
-            if cv2.waitKey(interval) & 0xFF == ord("q"):
-                break
-
-            # increment frame and loop
-            frame += 1
-            if loop and (frame == length):
-                frame = 0
-
-        # cleanly destroy windows
-        plt.close("all")
-        cv2.destroyAllWindows()
-
-    # cleanly exit after videos are saved
+        plt.show(block=False)
     if save:
-        log.info("Waiting for videos to write...")
-        pool.join()
-        log.info("Done writing videos")
+        plt.savefig(out_path)
+
+    return binary_label, binary_pred, tfpnr_dict
 
 
-class VideoStream(object):
-    def __init__(self, video_path):
-        self.video = cv2.VideoCapture(video_path)
-        self.max_idx = self.video.get(cv2.CAP_PROP_FRAME_COUNT) - 1
-        self.idx = self.video.get(cv2.CAP_PROP_POS_FRAMES)
-
-    def __del__(self):
-        self.video.release()
-
-    def get_frame(self, labels=None):
-
-        # loop video
-        self.idx = self.video.get(cv2.CAP_PROP_POS_FRAMES)
-        if self.idx == self.max_idx:
-            self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
-
-        # return byte-encoded image
-        success, image = self.video.read()
-        if success:
-            cv2.putText(
-                img=image,
-                text=f"{int(self.idx)}/{int(self.max_idx)}",
-                org=(10, 50),
-                fontFace=cv2.FONT_HERSHEY_TRIPLEX,
-                fontScale=1,
-                color=(0, 255, 0),
-                thickness=1,
-            )
-            _, jpeg = cv2.imencode(".jpg", image)
-            return jpeg.tobytes()
-        else:
-            raise IOError("Failed to retrieve video frame.")
+def calc_tdr(label: Dict, pred: List):
+    # convert to per frame binary target presence labels
+    targets = label_to_per_frame_targets(label)
+    binary_pred = boxes_to_binary(pred)
+    # calculare TPR and FPR metrics
+    return target_detection_rate(targets, binary_pred)
 
 
-def show_gif(f_path, img_width=100):
-    return HTML(
-        f'<img src="{f_path}" alt="Acoustic Camera GIF" style="width:{img_width}%"/>'
-    )
+def label_to_per_frame_list(label: Dict):
+    """
+    Returns a list of bounding boxes per frame
+    """
+    boxes = [[] for _ in range(label["video_length"])]
+    for track in label["tracks"]:
+        for frame in track["frames"]:
+            boxes[frame["frame"]].append(frame["box"])
+
+    return boxes
+
+
+def label_to_per_frame_targets(label: Dict) -> List:
+    """
+    Returns a list of target_ids per frame
+    """
+    targets = [[] for _ in range(label["video_length"])]
+    for track in label["tracks"]:
+        for frame in track["frames"]:
+            targets[frame["frame"]].append(track["track_id"])
+
+    return targets
+
+
+def xywh_to_xyxy(box):
+    return ((box[0], box[1]), (box[0] + box[2], box[1] + box[3]))
+
+
+def xyxy_to_xywh(box):
+    return (box[0][0], box[0][1], box[0][0] - box[1][0], box[0][1] - box[1][1])
+
+
+def draw_pred(image, frame_pred, color=(0, 255, 0)):
+    """
+    Draws prediction bounding box on the images
+    """
+    # grayscale - box should be white
+    if len(image.shape) != 3:
+        color = (255, 255, 255)
+    for box in frame_pred:
+        box = xywh_to_xyxy(box)
+        image = cv2.rectangle(image, box[0], box[1], color, 4)
+    return image
+
+
+def draw_label(image, frame_label, color=(0, 0, 255)):
+    """
+    Draws label bounding box on the images
+    """
+    # grayscale - box should be white
+    if len(image.shape) != 3:
+        color = (255, 255, 255)
+    for box in frame_label:
+        image = cv2.rectangle(image, box[0], box[1], color, 4)
+    return image
 
 
 def plot_time_domain_waveform(video, fps, pixel, freq_range=None):
@@ -320,3 +395,45 @@ def plot_time_domain_waveform(video, fps, pixel, freq_range=None):
     plt.show()
 
     return None
+
+
+# DEPRICATED
+class VideoStream(object):
+    def __init__(self, video_path):
+        self.video = cv2.VideoCapture(video_path)
+        self.max_idx = self.video.get(cv2.CAP_PROP_FRAME_COUNT) - 1
+        self.idx = self.video.get(cv2.CAP_PROP_POS_FRAMES)
+
+    def __del__(self):
+        self.video.release()
+
+    def get_frame(self, labels=None):
+
+        # loop video
+        self.idx = self.video.get(cv2.CAP_PROP_POS_FRAMES)
+        if self.idx == self.max_idx:
+            self.video.set(cv2.CAP_PROP_POS_FRAMES, 0)
+
+        # return byte-encoded image
+        success, image = self.video.read()
+        if success:
+            cv2.putText(
+                img=image,
+                text=f"{int(self.idx)}/{int(self.max_idx)}",
+                org=(10, 50),
+                fontFace=cv2.FONT_HERSHEY_TRIPLEX,
+                fontScale=1,
+                color=(0, 255, 0),
+                thickness=1,
+            )
+            _, jpeg = cv2.imencode(".jpg", image)
+            return jpeg.tobytes()
+        else:
+            raise IOError("Failed to retrieve video frame.")
+
+
+# DEPRICATED
+def show_gif(f_path, img_width=100):
+    return HTML(
+        f'<img src="{f_path}" alt="Acoustic Camera GIF" style="width:{img_width}%"/>'
+    )

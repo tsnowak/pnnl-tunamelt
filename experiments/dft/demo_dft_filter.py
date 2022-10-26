@@ -4,7 +4,7 @@ from typing import OrderedDict
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
-from turbx.vis import view
+from turbx.vis import viz_video_results
 
 ## SUPER SLOW
 if __name__ == "__main__":
@@ -85,7 +85,7 @@ if __name__ == "__main__":
 
     # display or save filters
     log.info("Visualizing filter output...")
-    view(
+    viz_video_results(
         display,
         label,
         pred,
