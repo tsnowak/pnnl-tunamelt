@@ -54,7 +54,7 @@ def generate_param_batches(param_list: Dict) -> List:
 
 
 # load and generate params List(Dict)
-params_path = f"{REPO_PATH}/experiments/dft/params.json"
+params_path = f"{REPO_PATH}/experiments/params.json"
 with open(params_path, "r") as f:
     params_list = json.load(f)
 param_batches = generate_param_batches(params_list)

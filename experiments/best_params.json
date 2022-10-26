@@ -5,18 +5,18 @@
     "turbine_filter": {
         "freq_range": [
             1.5,
-            3.0
+            3.5
         ],
-        "mask_smoothing": 9
+        "mask_smoothing": 7
     },
     "denoise_filter": {
-        "blur_size": 11
+        "blur_size": 9
     },
     "intensity_filter": {
-        "thresh": 11
+        "thresh": 9
     },
     "contour_filter": {
-        "min_area": 200,
-        "max_area": 6000
+        "min_area": 100,
+        "max_area": 10000
     }
 }
