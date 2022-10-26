@@ -49,7 +49,8 @@ if __name__ == "__main__":
     ]
 
     # get video, label
-    video, label = dataloader[0]
+
+    video, label = dataloader[3]
     log.info(f"Using video {label['video_id']}...")
 
     # calculate filters in order

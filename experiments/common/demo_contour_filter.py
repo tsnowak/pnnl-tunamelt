@@ -3,6 +3,7 @@ from typing import OrderedDict
 from turbx import REPO_PATH, log
 from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
+from turbx.filter.sdft import sdft_filter
 from turbx.vis import view
 
 if __name__ == "__main__":
@@ -27,6 +28,7 @@ if __name__ == "__main__":
     ]
 
     # get video, label
+
     video, label = dataloader[3]
     log.info(f"Using video {label['video_id']}...")
 

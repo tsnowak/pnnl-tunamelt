@@ -4,6 +4,7 @@ Implementation of DFT used to mask pixels exhibiting certain frequencies
 from typing import Optional, Tuple, Dict
 import cv2
 import numpy as np
+import cv2
 from turbx import log
 from turbx.filter.base import OfflineFilter
 from scipy.fft import fft, fftfreq, fftshift
@@ -67,18 +68,17 @@ class DFTFilter(OfflineFilter):
 
         self.calculate(video, fps)
         # video = video.astype(np.float32)
-        cv2.imwrite("dft_mask_original.png", self.mask * 255)
+        #cv2.imwrite("dft_mask_original.png", self.mask * 255)
         # added smoothing to turbine mask to prevent noisy cancellation
         self.mask = cv2.medianBlur(
             np.expand_dims(self.mask, axis=-1).astype("uint8"), self.mask_smoothing
         )
         inv_mask = np.abs(self.mask - 1.0)
-
         assert (
             video.shape[1:3] == self.mask.shape[:2]
         ), f"Incompatible video shape for generated filter.\nVideo shape: {video.shape}\nFilter shape:{self.mask.shape}"
 
-        cv2.imwrite("dft_mask_smooth.png", self.mask * 255)
+        #cv2.imwrite("dft_mask_smooth.png", self.mask * 255)
         out = video * inv_mask
         out = out.astype(np.uint8)
         log.debug(f"Returning filtered video of shape {out.shape}")
@@ -92,7 +92,6 @@ class DFTFilter(OfflineFilter):
         fps: int,
     ) -> np.ndarray:
 
-        video = video.astype(np.float32)
         # take the fft of the video
         video_fft = fft(video, axis=0, workers=-1)
         video_fft = fftshift(video_fft, axes=0)  # 0 freq at center
@@ -113,22 +112,20 @@ class DFTFilter(OfflineFilter):
 
         # remove pixels based on some thresholding strategy
         # mask = average_threshold(fft_video, freq, mag, freq_range, factor=2)
-        mask = self.thresh_func(pos_video_fft, pos_freq_bins, mag, self.freq_range)
+        self.mask = self.thresh_func(pos_video_fft, pos_freq_bins, mag, self.freq_range)
 
         assert (
-            mask.shape[:2] == video.shape[1:3]
+            self.mask.shape[:2] == video.shape[1:3]
         ), f"Mask shape differs from video shape \
                 \nMask: {mask.shape[:2]} \
                 \nVideo: {video.shape[1:2]}"
 
         assert (
-            mask.dtype == np.bool_
+            self.mask.dtype == np.bool_
         ), f"Mask dtype is not bool\
                 \n{mask.dtype}"
 
-        self.mask = mask
-
-        return mask
+        return self.mask
 
     def _mean_threshold(
         self,

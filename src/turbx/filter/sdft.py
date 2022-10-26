@@ -6,20 +6,19 @@ pixels oscillating within a range of frequencies on live video.
 from typing import Callable, Optional, Tuple
 
 import numpy as np
+import cv2
 from scipy.fft import fft, fftfreq, fftshift
 import matplotlib.pyplot as plt
-from river import utils
+from river import misc
 from turbx import log
-from turbx.utils import Array
 
 
 def sdft_filter(
-    video: Array["N,H,W,C", np.uint8],
+    video: np.ndarray,
     fps: int,
     windowSize: int = 20,
     freq_range: Optional[Tuple] = (1.5, 3.0),
-    thresh_func: Optional[Callable[[Tuple], Array["N,H,W,C", np.float32]]] = None,
-) -> Array["H,W,C", np.uint8]:
+) -> np.ndarray:
     """
     Uses the sliding dft in order to generate filtered video,
     at the moment just takes in the whole video and a frame size and
@@ -29,61 +28,47 @@ def sdft_filter(
     and return the new mask
     """
 
-    if thresh_func is None:
-        thresh_func = max_threshold
-
     log.debug(f"input video shape:{video.shape}")
-    # fft_video = utils.SDFT(windowSize)
-    # take the initial fft of the video
 
-    # for i in range(41):
-    #    fft_video = fft_video.update(video[i])
+    sdft = misc.SDFT(windowSize)
 
-    fft_video = fft(video[0:windowSize], axis=0)
+    for i, frame in enumerate(video):
+        sdft = sdft.update(frame)
 
-    # print(fft_video.shape)
-
-    for n in range(windowSize, video.shape[0]):
-        delta = video[n] - video[(n - windowSize)]
-        for f in range(windowSize):
-            fft_video[f] += delta.astype(complex)
-            complexF = np.exp((2j) * np.pi * f / windowSize)
-            fft_video[f] *= complexF
-
-    # print(fft_video.shape)
-
-    fft_video = np.fft.fftshift(np.abs(fft_video), axes=0)  # 0 freq at center
+    sdft.coefficients = np.fft.fftshift(np.abs(sdft.coefficients), axes=0)  # 0 freq at center
     # For each component get the fr1equency center that it represents
     freq = fftfreq(windowSize, d=1 / fps)
     freq = fftshift(freq)
-    log.debug(f"fft_video {fft_video.shape}")
-
+    log.debug(f"fft_video {sdft.coefficients.shape}")
     # only operate on positive frequencies (greater than 0 plus fudge)
     freq_thresh = 0.0001
     pos_range = np.argwhere(freq > (0 + freq_thresh)).squeeze()
-    print(pos_range)
-    fft_video = fft_video[pos_range, ...]
-    log.debug(f"pos_range video: {fft_video.shape}")
+    sdft.coefficients = sdft.coefficients[pos_range, ...]
+    log.debug(f"pos_range video: {sdft.coefficients.shape}")
     freq = freq[pos_range, ...]
 
-    plt.figure()
-    plt.plot(freq, fft_video[:, :, 100, 0], lw=1)
-    plt.show()
     # get magnitude and phase of each frequency component
     # magnitude of that frequency component
-    # mag = np.absolute(fft_video)
-    mag = fft_video
+    mag = np.absolute(sdft.coefficients)
     # phase between sine (im) and cosine (re) of that freq. component
     # phase = np.angle(fft_video)
     log.debug(f"magnitude array shape: {mag.shape}")
 
     # mask = average_threshold(fft_video, freq, mag, freq_range, factor=2)
-    mask = thresh_func(fft_video, freq, mag, freq_range)
+    mask = max_threshold(sdft.coefficients, freq, mag, freq_range)
     log.debug(f"per pixel mask: {mask.shape}")
 
-    plt.imsave("mask.png", mask[:, :, 0], cmap="Greys")
+    mask = np.abs(mask - 1.0)
+    mask = np.reshape(mask, (mask.shape[0], mask.shape[1], 1))
+    #mask = cv2.medianBlur(mask.astype(np.uint8), 15)
 
-    return mask
+    print(mask.shape)
+    mask = np.squeeze(mask)
+    cv2.imwrite('mask_blurred.png', mask*255)
+    out = video * mask
+    out = out.astype(np.uint8)
+
+    return out
 
 
 def get_in_range(fft_video: np.array, freq: np.array, freq_range: Tuple):
