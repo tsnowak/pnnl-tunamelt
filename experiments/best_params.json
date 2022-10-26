@@ -16,7 +16,7 @@
         "thresh": 9
     },
     "contour_filter": {
-        "min_area": 100,
-        "max_area": 10000
+        "min_area": 36,
+        "max_area": 14355
     }
 }
