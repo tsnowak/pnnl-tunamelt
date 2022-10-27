@@ -329,7 +329,7 @@ def draw_pred(image, frame_pred, color=(0, 255, 0)):
         color = (255, 255, 255)
     for box in frame_pred:
         box = xywh_to_xyxy(box)
-        image = cv2.rectangle(image, box[0], box[1], color, 4)
+        image = cv2.rectangle(image, box[0], box[1], color, thickness=2)
     return image
 
 
@@ -341,7 +341,7 @@ def draw_label(image, frame_label, color=(0, 0, 255)):
     if len(image.shape) != 3:
         color = (255, 255, 255)
     for box in frame_label:
-        image = cv2.rectangle(image, box[0], box[1], color, 4)
+        image = cv2.rectangle(image, box[0], box[1], color, thickness=2)
     return image
 
 

@@ -42,7 +42,7 @@ if __name__ == "__main__":
     )
 
     # get video, label
-    video, label = dataloader[8]
+    video, label = dataloader[7]
     log.info(f"Using video {label['video_id']}...")
 
     # run data through the filters in order

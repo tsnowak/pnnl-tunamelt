@@ -22,7 +22,6 @@ if __name__ == "__main__":
         params = json.load(f)
 
     mean_filter = common.MeanFilter(fps=fps, params=params["mean_filter"])
-    turbine_filter = dft.DFTFilter(fps=fps, params=params["turbine_filter"])
     denoise_filter = common.GaussianBlurDenoiseFilter(
         fps=fps, params=params["denoise_filter"]
     )
@@ -38,7 +37,6 @@ if __name__ == "__main__":
     filters = OrderedDict(
         [
             ("original", None),
-            ("turbine_filter", turbine_filter),
             ("mean_filter", mean_filter),
             ("intensity_filter", intensity_filter),
             ("denoise_filter", denoise_filter),
@@ -48,7 +46,7 @@ if __name__ == "__main__":
     )
 
     # get video, label
-    video, label = dataloader[0]
+    video, label = dataloader[2]
     log.info(f"Using video {label['video_id']}...")
 
     # run data through the filters in order

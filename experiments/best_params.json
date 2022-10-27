@@ -18,5 +18,9 @@
     "contour_filter": {
         "min_area": 36,
         "max_area": 14355
+    },
+    "tracklet_association": {
+        "window": 4,
+        "thresh": 0.15
     }
 }

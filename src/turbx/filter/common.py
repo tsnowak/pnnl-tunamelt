@@ -513,7 +513,7 @@ class TrackletAssociation:
     def __init__(
         self,
         preds: Optional[List[List]] = None,
-        params: Optional[Dict] = {"window": 3, "thresh": 100.0},
+        params: Optional[Dict] = {"window": 4, "thresh": 300.0},
     ):
         """
         preds: List[List] - per-frame bounding boxes
@@ -528,6 +528,7 @@ class TrackletAssociation:
 
     def filter(self, preds: List[List], window_length: int = 4):
         self.preds = preds
+        self.window_length = window_length
         return self.calculate(preds)
 
     def _xyxy_centroid(self, box: List[List]):
@@ -536,54 +537,83 @@ class TrackletAssociation:
         return np.array([x_avg, y_avg], dtype=np.uint16)
 
     def _distance_cost(self, box1, box2):
-        box1_cent = self._xyxy_centroid(box1)
-        box2_cent = self._xyxy_centroid(box2)
-        # print(f"Centroid: {box1_cent}")
-        # print(f"Centroid: {box2_cent}")
-        return np.sqrt(np.sum(np.square(box1_cent - box2_cent)))
+        box1_cent = self._xyxy_centroid(box1).astype(np.float32)
+        box2_cent = self._xyxy_centroid(box2).astype(np.float32)
+        # print(f"centroid: {box1_cent}, {box2_cent}")
+        # https://reference.wolfram.com/language/ref/NormalizedSquaredEuclideanDistance.html
+        # scaled between 0 and 1
+        return np.var(box1_cent - box2_cent) / (
+            2 * (np.var(box1_cent) + np.var(box2_cent))
+        )
 
     def _scale_cost(self, box1, box2):
-        box1_scale = np.array(box1, np.int16)[2:]
-        box2_scale = np.array(box2, np.int16)[2:]
-        # print(f"Scale1: {box1_scale}")
-        # print(f"Scale2: {box2_scale}")
-        return np.sqrt(np.sum(np.square(box1_scale - box2_scale)))
+        box1_scale = np.array(box1, np.float32)[2:]
+        box2_scale = np.array(box2, np.float32)[2:]
+        # print(f"scale: {box1_scale}, {box2_scale}")
+        # https://reference.wolfram.com/language/ref/NormalizedSquaredEuclideanDistance.html
+        # scaled between 0 and 1
+        return np.var(box1_scale - box2_scale) / (
+            2 * (np.var(box1_scale) + np.var(box2_scale))
+        )
 
-    def calculate(self, preds, window_length=4):
+    def _min_cost_neighbor(self, box: List[List], other_boxes: List[List[List]]):
+        """
+        Return the minimum scoring bbox relative to box
+        """
+        box_scores = []
+        for obox in other_boxes:
+            d_cost = self._distance_cost(box, obox)
+            s_cost = self._scale_cost(box, obox)
+            box_scores.append(0.5 * (d_cost + s_cost))
+        if len(box_scores) > 0:
+            min_idx = np.argmin(box_scores)
+            min_cost = box_scores[min_idx]
+            min_box = other_boxes[min_idx]
+            # print(f"Min Cost: {min_cost}")
+            return min_cost, min_box
+        else:
+            return 1.0, None
+
+    def _cost_over_window(
+        self, pred: List[List[List[List]]], idx: int, box: List[List], window: int
+    ):
+        """
+        cost of bbox compared to best neighbors in prior window number of frames
+        """
+
+        min_neighbors = []
+        min_boxes = []
+        for w in range(1, window + 1):
+            min_neighbor, min_box = self._min_cost_neighbor(box, pred[idx - w])
+            min_neighbors.append(min_neighbor)
+            min_boxes.append(min_box)
+
+        cost = sum(min_neighbors) / window
+
+        return cost, min_boxes
+
+    def calculate(self, preds):
         # initialize with empty first frame of tracks
         # OMG this doesn't create new []'s len(preds) times, so when one is altered, all are!! Weirdest shit!!
         # valid_tracks = [[]] * len(preds)
         valid_tracks = [[] for _ in range(len(preds))]
 
         # define window of frames to consider
-        window = window_length - 1
+        window = self.window_length - 1
         assert window >= 0, "window_length must be greater than or equal to 1"
-        it = range(window, len(preds))
+        frame_idxs = range(window, len(preds))
 
+        # TODO: implement forward and backward verificaton
         # iterate over all frames in video
-        for i in it:
-            prior = i - window
-            f_preds = preds[i]
-            pf_preds = preds[prior:i]
-
-            # for each box in current frame
-            for f_pred in f_preds:
-                costs = []
-                min_idx = None
-
-                # calculate cost to every prior box
-                for frame_preds in pf_preds:
-                    for pf_pred in frame_preds:
-                        d_cost = self._distance_cost(f_pred, pf_pred)
-                        s_cost = self._scale_cost(f_pred, pf_pred)
-                        print(f"Dist Cost: {d_cost}; Scale Cost: {s_cost}")
-                        cost = sum([d_cost, s_cost])
-                        costs.append(cost)
-                        min_idx = np.argmin(costs)
-
-                # take lowest cost and if below thresh, append to valid for frame[i]
-                if min_idx:
-                    if costs[min_idx] < self.thresh:
-                        valid_tracks[i] += [f_pred]
+        for i in frame_idxs:
+            for box in preds[i]:
+                cost, min_boxes = self._cost_over_window(
+                    preds, i, box, self.window_length
+                )
+                if cost <= self.thresh:
+                    valid_tracks[i].append(box)
+                    for j in range(1, self.window_length + 1):
+                        if min_boxes[j - 1] is not None:
+                            valid_tracks[i - j].append(min_boxes[j - 1])
 
         return valid_tracks
