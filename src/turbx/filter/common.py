@@ -1,4 +1,5 @@
 from typing import Optional, List, Tuple, Dict
+from collections import OrderedDict
 import numpy as np
 import cv2
 from findpeaks import findpeaks
@@ -587,11 +588,13 @@ class TrackletAssociation:
         """
 
         min_neighbors = []
-        min_boxes = []
+        min_boxes = OrderedDict()
         for w in range(1, window + 1):
-            min_neighbor, min_box = self._min_cost_neighbor(box, pred[idx - w])
+            frame_idx = idx - w
+            min_neighbor, min_box = self._min_cost_neighbor(box, pred[frame_idx])
             min_neighbors.append(min_neighbor)
-            min_boxes.append(min_box)
+            if min_box is not None:
+                min_boxes[frame_idx] = min_box
 
         if cost_f == "average":
             cost = sum(min_neighbors) / window
@@ -610,11 +613,18 @@ class TrackletAssociation:
         valid_tracks = [set() for _ in range(len(preds))]
 
         # define window of frames to consider
-        window = self.window_length - 1
-        assert window >= 0, "window_length must be greater than or equal to 1"
-        frame_idxs = range(window, len(preds))
+        start_idx = (
+            self.window_length - 1
+        )  # window_length = 4 -> start at index 3 (0 indexed)
+        assert (
+            start_idx >= 0
+        ), "window_length must be greater than or equal to 1"  # make sure starting index is valid
+        frame_idxs = range(
+            start_idx, len(preds)
+        )  # frames to loop over - b/c _cost_over_window is going to look at prior frames
 
         # TODO: implement forward and backward verificaton
+        # TODO: verify min_boxes are being correctly indexed
         # iterate over all frames in video
         for i in frame_idxs:
             for box in preds[i]:
@@ -623,10 +633,10 @@ class TrackletAssociation:
                 )
                 if cost <= self.thresh:
                     valid_tracks[i].add(box)
-                    for j in range(1, self.window_length + 1):
-                        if min_boxes[j - 1] is not None:
-                            valid_tracks[i - j].add(min_boxes[j - 1])
-                            # TODO: box interpolation
+                    # convert to dict(frame_idx: box)
+                    for frame_idx, value in min_boxes.items():
+                        valid_tracks[frame_idx].add(value)
+                    # TODO: box interpolation
         # convert sets to list
         valid_tracks = [list(tracklet) for tracklet in valid_tracks]
         return valid_tracks
