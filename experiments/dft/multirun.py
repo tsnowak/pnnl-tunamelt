@@ -32,7 +32,10 @@ def generate_param_batches(param_list: Dict) -> List:
             all_params.append(v_v)
 
     # convert all_params from unlabeled List(List) to List(Dict) where Dict is of shape batch_key
-    all_params = list(product(*all_params))
+    try:
+        all_params = list(product(*all_params))
+    except TypeError:
+        all_params = [all_params]
     all_params_dict = []
     iter = 0
     for batch in all_params:
@@ -54,6 +57,7 @@ def generate_param_batches(param_list: Dict) -> List:
 
 
 # load and generate params List(Dict)
+# params_path = f"{REPO_PATH}/experiments/best_params.json"
 params_path = f"{REPO_PATH}/experiments/params.json"
 with open(params_path, "r") as f:
     params_list = json.load(f)
@@ -88,6 +92,9 @@ for itr, params in enumerate(param_batches):
         fps=fps, params=params["intensity_filter"]
     )
     contour_filter = common.ContourFilter(params=params["contour_filter"])
+    tracklet_association = common.TrackletAssociation(
+        params=params["tracklet_association"]
+    )
 
     # define the name and order of filters to apply
     filters = OrderedDict(
@@ -98,6 +105,7 @@ for itr, params in enumerate(param_batches):
             ("denoise_filter", denoise_filter),
             ("intensity_filter", intensity_filter),
             ("contour_filter", contour_filter),
+            ("tracklet_association", tracklet_association),
         ]
     )
 

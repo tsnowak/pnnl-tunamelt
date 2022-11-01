@@ -1,8 +1,8 @@
 from typing import List, Dict
 
 
-def safe_division(n, d):
-    return n / d if d else 0
+def safe_division(n, d, value=0.0):
+    return n / d if d else value
 
 
 def boxes_to_binary(pred: List):
@@ -39,7 +39,7 @@ def target_detection_rate(targets: List, preds: List):
                     # add if detection in frame
                     detected.add(target)
 
-    tdr = safe_division(len(detected), len(unique))
+    tdr = safe_division(len(detected), len(unique), value=1.0)
     return len(unique), len(detected), tdr
 
 

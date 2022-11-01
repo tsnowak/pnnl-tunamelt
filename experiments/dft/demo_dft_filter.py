@@ -1,3 +1,4 @@
+import sys
 import json
 from pathlib import Path
 from typing import OrderedDict
@@ -48,7 +49,8 @@ if __name__ == "__main__":
     )
 
     # get video, label
-    video, label = dataloader[0]
+    video, label = dataloader.get_vid_id(14)  # index dataloader by video_id
+    # video, label = dataloader[14]             # get idx from dataloader iterator
     log.info(f"Using video {label['video_id']}...")
 
     # run data through the filters in order

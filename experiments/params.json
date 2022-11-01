@@ -14,33 +14,42 @@
             ]
         ],
         "mask_smoothing": [
+            5,
             7,
-            9,
-            11
+            9
         ]
     },
     "denoise_filter": {
         "blur_size": [
-            9,
-            11,
-            13
+            7,
+            9
         ]
     },
     "intensity_filter": {
         "thresh": [
-            9,
-            11,
-            13
+            100,
+            125
         ]
     },
     "contour_filter": {
         "min_area": [
-            100,
-            200,
-            300
+            27,
+            36
         ],
         "max_area": [
-            6000
+            14355
+        ]
+    },
+    "tracklet_association": {
+        "window": [
+            3,
+            4,
+            5
+        ],
+        "thresh": [
+            0.16,
+            0.33,
+            0.5
         ]
     }
 }

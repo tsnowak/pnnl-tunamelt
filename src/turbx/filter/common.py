@@ -575,7 +575,12 @@ class TrackletAssociation:
             return 1.0, None
 
     def _cost_over_window(
-        self, pred: List[List[List[List]]], idx: int, box: List[List], window: int
+        self,
+        pred: List[List[List[List]]],
+        idx: int,
+        box: List[List],
+        window: int,
+        cost_f: str = "minimum",
     ):
         """
         cost of bbox compared to best neighbors in prior window number of frames
@@ -588,15 +593,21 @@ class TrackletAssociation:
             min_neighbors.append(min_neighbor)
             min_boxes.append(min_box)
 
-        cost = sum(min_neighbors) / window
+        if cost_f == "average":
+            cost = sum(min_neighbors) / window
+        elif cost_f == "minimum":
+            cost = min(min_neighbors)
+        else:
+            raise ValueError(
+                f'cost_f must be either "average" or "minimum". Not {cost_f}.'
+            )
 
         return cost, min_boxes
 
     def calculate(self, preds):
-        # initialize with empty first frame of tracks
-        # OMG this doesn't create new []'s len(preds) times, so when one is altered, all are!! Weirdest shit!!
-        # valid_tracks = [[]] * len(preds)
-        valid_tracks = [[] for _ in range(len(preds))]
+        # initialize empty list of verified tracks (according to association alg.)
+        # use sets to avoid redundant bboxes
+        valid_tracks = [set() for _ in range(len(preds))]
 
         # define window of frames to consider
         window = self.window_length - 1
@@ -611,9 +622,11 @@ class TrackletAssociation:
                     preds, i, box, self.window_length
                 )
                 if cost <= self.thresh:
-                    valid_tracks[i].append(box)
+                    valid_tracks[i].add(box)
                     for j in range(1, self.window_length + 1):
                         if min_boxes[j - 1] is not None:
-                            valid_tracks[i - j].append(min_boxes[j - 1])
-
+                            valid_tracks[i - j].add(min_boxes[j - 1])
+                            # TODO: box interpolation
+        # convert sets to list
+        valid_tracks = [list(tracklet) for tracklet in valid_tracks]
         return valid_tracks

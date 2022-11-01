@@ -13,7 +13,7 @@
         "blur_size": 9
     },
     "intensity_filter": {
-        "thresh": 9
+        "thresh": 100
     },
     "contour_filter": {
         "min_area": 36,
@@ -21,6 +21,6 @@
     },
     "tracklet_association": {
         "window": 4,
-        "thresh": 0.15
+        "thresh": 0.33
     }
 }

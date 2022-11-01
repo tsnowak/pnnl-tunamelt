@@ -261,16 +261,17 @@ def calc_tfpnr(label: Dict, pred: List, show=False, save=False, out_path=Path())
     # calculare TPR and FPR metrics
     tfpnr_dict = tfpnr(binary_label, binary_pred)
 
-    # plot binary per frame results
-    plt.figure("per_frame")
-    plt.plot(binary_label)
-    plt.plot(binary_pred)
+    if show or save:
+        # plot binary per frame results
+        plt.figure("per_frame")
+        plt.plot(binary_label)
+        plt.plot(binary_pred)
 
-    plt.figure("metrics")
-    keys = ["tpr", "tnr", "fpr", "fnr"]
-    data = [tfpnr_dict[k] for k in keys]
-    plt.bar(keys, data)
-    plt.ylim(bottom=0.0, top=1.0)
+        plt.figure("metrics")
+        keys = ["tpr", "tnr", "fpr", "fnr"]
+        data = [tfpnr_dict[k] for k in keys]
+        plt.bar(keys, data)
+        plt.ylim(bottom=0.0, top=1.0)
 
     if show:
         plt.show(block=False)
