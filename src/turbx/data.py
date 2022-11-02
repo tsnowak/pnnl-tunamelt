@@ -1,7 +1,7 @@
 from doctest import UnexpectedException
 import sys
 from pathlib import Path
-from typing import Union, List, Dict
+from typing import Union, List, Dict, Tuple
 import xmltodict
 from pprint import pprint
 
@@ -98,7 +98,7 @@ class DataLoader:
     def __iter__(self):
         return self
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx: int):
         v_path, label = self.data_split[idx]
         video = to_numpy(v_path)
         return video, label
@@ -119,6 +119,16 @@ class DataLoader:
             return video, label
         else:
             raise StopIteration
+
+    def reset(self):
+        self._idx = 0
+
+    def get_vid_id(self, vid_id: int) -> Tuple[np.ndarray, Dict]:
+        for v_path, label in self.data_split:
+            if label["video_id"] == vid_id:
+                video = to_numpy(v_path)
+                return video, label
+        raise ValueError(f"{vid_id} does not exist.")
 
 
 def find_files(path, file_type=".mp4"):

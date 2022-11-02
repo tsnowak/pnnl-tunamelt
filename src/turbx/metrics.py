@@ -1,8 +1,19 @@
 from typing import List, Dict
 
 
+def safe_division(n, d, value=0.0):
+    return n / d if d else value
+
+
 def boxes_to_binary(pred: List):
     return [1 if len(x) > 0 else 0 for x in pred]
+
+
+def calc_box_area(box: List[List]):
+    """
+    Calculate the area of a xyxy bbox
+    """
+    return (box[1][0] - box[0][0]) * (box[1][1] - box[1][0])
 
 
 def roc(label: List, pred: List):
@@ -11,6 +22,25 @@ def roc(label: List, pred: List):
     False Positive Rate (FPR) across a changing sensitivity parameter
     """
     raise NotImplementedError
+
+
+def target_detection_rate(targets: List, preds: List):
+    detected = set()
+    unique = set()
+    # for each frame
+    for i, frame in enumerate(targets):
+        # if there is target
+        if len(frame) > 0:
+            # iterate through targets
+            for target in frame:
+                # add unique target
+                unique.add(target)
+                if preds[i] != 0:
+                    # add if detection in frame
+                    detected.add(target)
+
+    tdr = safe_division(len(detected), len(unique), value=1.0)
+    return len(unique), len(detected), tdr
 
 
 def tfpnr(label: List, pred: List) -> Dict:
@@ -46,9 +76,6 @@ def tfpnr(label: List, pred: List) -> Dict:
             fp += 1
         elif (label[l] == 1) and (pred[l] == 0):
             fn += 1
-
-    def safe_division(n, d):
-        return n / d if d else 0
 
     return {
         "p": p,

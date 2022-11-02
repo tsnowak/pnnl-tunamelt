@@ -1,0 +1,55 @@
+{
+    "mean_filter": {
+        "std_devs": [
+            2.0,
+            2.5,
+            3.0
+        ]
+    },
+    "turbine_filter": {
+        "freq_range": [
+            [
+                1.5,
+                3.5
+            ]
+        ],
+        "mask_smoothing": [
+            5,
+            7,
+            9
+        ]
+    },
+    "denoise_filter": {
+        "blur_size": [
+            7,
+            9
+        ]
+    },
+    "intensity_filter": {
+        "thresh": [
+            100,
+            125
+        ]
+    },
+    "contour_filter": {
+        "min_area": [
+            27,
+            36
+        ],
+        "max_area": [
+            14355
+        ]
+    },
+    "tracklet_association": {
+        "window": [
+            3,
+            4,
+            5
+        ],
+        "thresh": [
+            0.16,
+            0.33,
+            0.5
+        ]
+    }
+}
