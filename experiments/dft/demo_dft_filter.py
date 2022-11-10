@@ -49,15 +49,11 @@ if __name__ == "__main__":
     )
 
     # get video, label
-<<<<<<< HEAD
 
-    video, label = dataloader[3]
-=======
     # Smallest Target/Hardest to Detect: 20,19
     # Most Noise (least % frames removed): 13
     video, label = dataloader.get_vid_id(13)  # index dataloader by video_id
     # video, label = dataloader[14]             # get idx from dataloader iterator
->>>>>>> 2c1d91f615700a6e8133f045f796de6423820906
     log.info(f"Using video {label['video_id']}...")
 
     # run data through the filters in order
