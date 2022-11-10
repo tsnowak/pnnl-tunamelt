@@ -68,7 +68,8 @@ class Dataset:
                 # find label file path in labeled videos
                 video = None
                 for v in self.videos:
-                    if v.name == label["filename"]:
+                    # labeler didn't always use .mp4 in label["filename"]
+                    if label["filename"] in v.name:
                         video = v
                         break
                 if video is not None:

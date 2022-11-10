@@ -64,6 +64,11 @@ with open(params_path, "r") as f:
     params_list = json.load(f)
 param_batches = generate_param_batches(params_list)
 
+# create the dataset - do this once, do dataloader.reset() each batch
+data_path = f"{REPO_PATH}/data/mp4"
+label_path = f"{REPO_PATH}/data/labels"
+dataloader = DataLoader(Dataset(videos=data_path, labels=label_path), split="test")
+
 # create output folder structure
 date_time = datetime.now()
 ymd = date_time.strftime("%Y-%m-%d")
@@ -72,10 +77,6 @@ run_name = str(Path(__file__).parent.name)
 run_path = f"{REPO_PATH}/experiments/{run_name}/outputs/{ymd}/{hms}"
 os.makedirs(run_path, exist_ok=True)
 
-# create the dataset - do this once, do dataloader.reset() each batch
-data_path = f"{REPO_PATH}/data/mp4"
-label_path = f"{REPO_PATH}/data/labels"
-dataloader = DataLoader(Dataset(videos=data_path, labels=label_path))
 
 # run filters on every video for each param combination
 for itr, params in enumerate(param_batches):

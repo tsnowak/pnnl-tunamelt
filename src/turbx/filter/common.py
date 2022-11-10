@@ -629,7 +629,6 @@ class TrackletAssociation:
         )  # frames to loop over - b/c _cost_over_window is going to look at prior frames
 
         # TODO: implement forward and backward verificaton
-        # TODO: verify min_boxes are being correctly indexed
         # iterate over all frames in video
         for i in frame_idxs:
             for box in preds[i]:
