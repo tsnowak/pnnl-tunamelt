@@ -16,8 +16,8 @@ loggers:
     std_logger:
         level: DEBUG
         handlers: [std]
-        propagate: no
-#root:
-#    level: WARNING
-#    handlers: [default]
-#    propagate: yes
+        propagate: yes
+root:
+    level: WARNING
+    handlers: [default]
+    propagate: yes

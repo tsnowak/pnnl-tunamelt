@@ -49,6 +49,7 @@ class MeanFilter(OfflineFilter):
                 raise ValueError("fps not given.")
             fps = self.fps
 
+
         if len(video.shape) == 4:
             self.calculate(video[..., 2], fps)
             filtered_video = np.multiply(video, np.stack([self.mask] * 3, axis=3))
@@ -59,6 +60,7 @@ class MeanFilter(OfflineFilter):
             raise ValueError(
                 "Input video is neither NxWxHxC nor NxWxH. Verify its structure."
             )
+
         filtered_video = filtered_video.astype(np.uint8)
         log.debug(f"Mean background filtered video of shape: {filtered_video.shape}")
         return filtered_video
@@ -241,6 +243,7 @@ class NlMeansDenoiseFilter(OfflineFilter):
             )
             value_channel[i, ...] = frame
 
+        
         ## time-windowed NlMeansDenoising -> VERY SLOW
         # batch_size = 5
         # for i in range(len(value_channel)):
@@ -371,7 +374,9 @@ class IntensityFilter(OfflineFilter):
                 raise ValueError("fps not given.")
             fps = self.fps
         self.mask = self.calculate(video, fps)
-        out = np.multiply(video, self.mask)
+        #out = np.multiply(video, self.mask)
+
+        out = np.multiply(video, self.mask, dtype=np.uint8)
         out = out.astype(np.uint8)
         log.debug(f"Intensity filtered video of shape: {out.shape}")
         return out
@@ -403,9 +408,9 @@ class IntensityFilter(OfflineFilter):
         mask = video > (self.thresh)
         self.mask = mask
 
-        log.debug(f"Generated intensity filter mask of shape: {mask.shape}")
+        log.debug(f"Generated intensity filter mask of shape: {self.mask.shape}")
 
-        return mask
+        return self.mask
 
 
 class DilateErodeFilter(OfflineFilter):
@@ -467,7 +472,7 @@ class ContourFilter:
     def __init__(
         self,
         video: Optional[np.ndarray] = None,
-        params: Optional[Dict] = {"min_area": 200, "max_area": 6000},
+        params: Optional[Dict] = {"min_area": 36, "max_area": 14355},
     ):
         """
         Detect contours of a certain size
