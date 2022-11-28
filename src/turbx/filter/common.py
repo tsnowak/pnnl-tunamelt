@@ -2,6 +2,7 @@ from typing import Optional, List, Tuple, Dict
 from collections import OrderedDict
 import numpy as np
 import cv2
+from copy import deepcopy
 from findpeaks import findpeaks
 from turbx import log
 from turbx.filter.base import OfflineFilter

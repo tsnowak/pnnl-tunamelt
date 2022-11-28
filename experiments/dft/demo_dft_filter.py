@@ -84,6 +84,8 @@ if __name__ == "__main__":
             display[name] = numpy_to_cv2(output, filters_list[idx][1].out_format, "BGR")
         idx += 1
 
+    print(mean_filter.mask.shape)
+
     # view and save videos with results + save results
     log.info("Visualizing filter outputs...")
     viz_video_results(
