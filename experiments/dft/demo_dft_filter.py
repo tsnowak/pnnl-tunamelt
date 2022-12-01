@@ -9,10 +9,10 @@ from turbx.vis import viz_video_results
 
 if __name__ == "__main__":
 
-    file_path = f"{REPO_PATH}/data/mp4"
-    labels = f"{REPO_PATH}/data/labels"
+    file_path = f"{REPO_PATH}/data/mp4/batched_test"
+    labels = f"{REPO_PATH}/data/labels/cvat-video-1.1/batched_test"
 
-    dataloader = DataLoader(Dataset(videos=file_path, labels=labels))
+    dataloader = DataLoader(Dataset(videos=file_path, labels=labels), split="test")
 
     fps = 10
     frame_delay = 1.0 / fps
@@ -49,9 +49,10 @@ if __name__ == "__main__":
     )
 
     # get video, label
+
     # Smallest Target/Hardest to Detect: 20,19
     # Most Noise (least % frames removed): 13
-    video, label = dataloader.get_vid_id(13)  # index dataloader by video_id
+    video, label = dataloader.get_vid_id(390001)  # index dataloader by video_id
     # video, label = dataloader[14]             # get idx from dataloader iterator
     log.info(f"Using video {label['video_id']}...")
 
@@ -83,6 +84,8 @@ if __name__ == "__main__":
         else:
             display[name] = numpy_to_cv2(output, filters_list[idx][1].out_format, "BGR")
         idx += 1
+
+    print(mean_filter.mask.shape)
 
     # view and save videos with results + save results
     log.info("Visualizing filter outputs...")
