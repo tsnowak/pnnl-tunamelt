@@ -15,8 +15,7 @@
         ],
         "mask_smoothing": [
             11,
-            13,
-            15
+            13
         ]
     },
     "denoise_filter": {
@@ -27,14 +26,12 @@
     },
     "intensity_filter": {
         "thresh": [
-            100,
-            125
+            100
         ]
     },
     "contour_filter": {
         "min_area": [
-            15,
-            20
+            15
         ],
         "max_area": [
             14355
