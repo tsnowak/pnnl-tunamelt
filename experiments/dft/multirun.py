@@ -1,4 +1,5 @@
 import os
+import shutil
 import sys
 from copy import deepcopy
 from typing import List, Dict, OrderedDict
@@ -58,8 +59,8 @@ def generate_param_batches(param_list: Dict) -> List:
 
 # load and generate params List(Dict)
 # NOTE: change this to use best_params (run one param set) vs. params (multirun)
-params_path = f"{REPO_PATH}/experiments/best_params.json"
-# params_path = f"{REPO_PATH}/experiments/params.json"
+# params_path = f"{REPO_PATH}/experiments/best_params.json"
+params_path = f"{REPO_PATH}/experiments/params.json"
 with open(params_path, "r") as f:
     params_list = json.load(f)
 param_batches = generate_param_batches(params_list)
@@ -76,7 +77,12 @@ hms = date_time.strftime("%H-%M-%S")
 run_name = str(Path(__file__).parent.name)
 run_path = f"{REPO_PATH}/experiments/{run_name}/outputs/{ymd}/{hms}"
 os.makedirs(run_path, exist_ok=True)
+shutil.copy(params_path, f"{run_path}/{Path(params_path).name}")
 
+# create the dataset - do this once, do dataloader.reset() each batch
+data_path = f"{REPO_PATH}/data/mp4"
+label_path = f"{REPO_PATH}/data/labels"
+dataloader = DataLoader(Dataset(videos=data_path, labels=label_path), split="train")
 
 # run filters on every video for each param combination
 for itr, params in enumerate(param_batches):
