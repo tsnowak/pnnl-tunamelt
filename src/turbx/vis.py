@@ -289,14 +289,24 @@ def calc_tdr(label: Dict, pred: List):
     return target_detection_rate(targets, binary_pred)
 
 
+# TODO: double counting first/last frame of split videos!
+# TODO: verify that video frame indexing is spot on
+# - frame - start_frame not in bounds for last frame
 def label_to_per_frame_list(label: Dict):
     """
     Returns a list of bounding boxes per frame
     """
-    boxes = [[] for _ in range(label["video_length"])]
+    # support split videos while back support full videos
+    try:
+        start_frame = label["start_frame"]
+    except KeyError:
+        start_frame = 0
+
+    # boxes = e.g. [0, 300], e.g. [300, 600] -> boxes[600] out of range
+    boxes = [[] for _ in range(start_frame, start_frame + label["video_length"])]
     for track in label["tracks"]:
         for frame in track["frames"]:
-            boxes[frame["frame"]].append(frame["box"])
+            boxes[frame["frame"] - start_frame].append(frame["box"])
 
     return boxes
 
@@ -305,10 +315,16 @@ def label_to_per_frame_targets(label: Dict) -> List:
     """
     Returns a list of target_ids per frame
     """
-    targets = [[] for _ in range(label["video_length"])]
+    # support split videos while back support full videos
+    try:
+        start_frame = label["start_frame"]
+    except KeyError:
+        start_frame = 0
+
+    targets = [[] for _ in range(start_frame, start_frame + label["video_length"])]
     for track in label["tracks"]:
         for frame in track["frames"]:
-            targets[frame["frame"]].append(track["track_id"])
+            targets[frame["frame"] - start_frame].append(track["track_id"])
 
     return targets
 

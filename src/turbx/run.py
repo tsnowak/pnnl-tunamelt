@@ -60,11 +60,11 @@ def run(
             if name == "original":
                 display[name] = numpy_to_cv2(video, "HSV", "BGR")
             elif filters[name].__class__.__name__ == "ContourFilter":
-                # pred = output
-                continue
-            elif filters[name].__class__.__name__ == "TrackletAssociation":
                 pred = output
                 # continue
+            elif filters[name].__class__.__name__ == "TrackletAssociation":
+                # pred = output
+                continue
             else:
                 display[name] = numpy_to_cv2(
                     output, filters_list[idx][1].out_format, "BGR"

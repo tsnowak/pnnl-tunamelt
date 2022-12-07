@@ -235,6 +235,7 @@ def parse_cvat_video_11(xml_f):
     output = {
         "video_id": video_id,
         "filename": video["name"],
+        "start_frame": int(video["start_frame"]),
         "video_length": int(video["size"]),
         "video_shape": {
             "height": int(video["original_size"]["height"]),
