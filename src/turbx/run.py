@@ -1,5 +1,6 @@
 import os
 import json
+import time
 from datetime import datetime
 from pathlib import Path
 from typing import OrderedDict, Dict
@@ -30,6 +31,7 @@ def run(
     # loop through dataset
     for video, label in dataloader:
 
+        start_time = time.time_ns()
         # stop if hit max_vid_itrs
         if vid_itr >= max_vid_itrs:
             break
@@ -92,3 +94,9 @@ def run(
 
         # update counter
         vid_itr += 1
+
+        # save run time estimates
+        end_time = time.time_ns()
+        runtime = float(end_time - start_time) / label["video_length"]
+        with open(f"{REPO_PATH}/experiments/runtime.txt", "a") as f_runtime:
+            f_runtime.write(str(runtime) + "\n")
