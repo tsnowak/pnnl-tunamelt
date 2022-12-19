@@ -1,13 +1,13 @@
 {
     "mean_filter": {
-        "std_devs": 3.0
+        "std_devs": 2.5
     },
     "turbine_filter": {
         "freq_range": [
             1.5,
-            2.5
+            3.5
         ],
-        "mask_smoothing": 11
+        "mask_smoothing": 13
     },
     "denoise_filter": {
         "blur_size": 5
@@ -20,7 +20,7 @@
         "max_area": 14355
     },
     "tracklet_association": {
-        "window": 4,
-        "thresh": 0.08
+        "window": 3,
+        "thresh": 0.1
     }
 }
