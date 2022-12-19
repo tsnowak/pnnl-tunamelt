@@ -49,7 +49,6 @@ class MeanFilter(OfflineFilter):
                 raise ValueError("fps not given.")
             fps = self.fps
 
-
         if len(video.shape) == 4:
             self.calculate(video[..., 2], fps)
             filtered_video = np.multiply(video, np.stack([self.mask] * 3, axis=3))
@@ -243,7 +242,6 @@ class NlMeansDenoiseFilter(OfflineFilter):
             )
             value_channel[i, ...] = frame
 
-        
         ## time-windowed NlMeansDenoising -> VERY SLOW
         # batch_size = 5
         # for i in range(len(value_channel)):
@@ -374,7 +372,7 @@ class IntensityFilter(OfflineFilter):
                 raise ValueError("fps not given.")
             fps = self.fps
         self.mask = self.calculate(video, fps)
-        #out = np.multiply(video, self.mask)
+        # out = np.multiply(video, self.mask)
 
         out = np.multiply(video, self.mask, dtype=np.uint8)
         out = out.astype(np.uint8)
@@ -629,7 +627,8 @@ class TrackletAssociation:
             start_idx, len(preds)
         )  # frames to loop over - b/c _cost_over_window is going to look at prior frames
 
-        # TODO: implement forward and backward verificaton
+        # TODO: multi-proc this (slow with large numbers of boxes)
+        # TODO: just cast for i in frame_idxs to MP pool?
         # iterate over all frames in video
         for i in frame_idxs:
             for box in preds[i]:
@@ -641,7 +640,6 @@ class TrackletAssociation:
                     # convert to dict(frame_idx: box)
                     for frame_idx, value in min_boxes.items():
                         valid_tracks[frame_idx].add(value)
-                    # TODO: box interpolation
         # convert sets to list
         valid_tracks = [list(tracklet) for tracklet in valid_tracks]
         return valid_tracks
