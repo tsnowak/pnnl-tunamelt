@@ -3,6 +3,7 @@ from collections import OrderedDict
 import numpy as np
 import cv2
 from copy import deepcopy
+from multiprocessing import Pool, Manager
 from findpeaks import findpeaks
 from turbx import log
 from turbx.filter.base import OfflineFilter
@@ -628,7 +629,8 @@ class TrackletAssociation:
         )  # frames to loop over - b/c _cost_over_window is going to look at prior frames
 
         # TODO: multi-proc this (slow with large numbers of boxes)
-        # TODO: just cast for i in frame_idxs to MP pool?
+        # TODO: just cast for i in frame_idxs to MP pool? - maybe not worth time to dev?
+        # TODO: would need to perform cost_over_window, return (cost, i, min_boxes) in queue, then unify into set?
         # iterate over all frames in video
         for i in frame_idxs:
             for box in preds[i]:
@@ -640,6 +642,32 @@ class TrackletAssociation:
                     # convert to dict(frame_idx: box)
                     for frame_idx, value in min_boxes.items():
                         valid_tracks[frame_idx].add(value)
+
+        # manager = Manager()
+        # mp_window_length = manager.Value('i', self.window_length)
+        # mp_thresh = manager.Value('f', self.thresh)
+        # mp_valid_tracks = manager.list(valid_tracks)
+        # mp_preds = manager.list(preds)
+
+        ## MP the above loop
+        # with Pool(processes=16) as pool:
+        #    inputs = [(mp_valid_tracks, i, mp_preds, mp_window_length, mp_thresh, self._cost_over_window) for i in frame_idxs]
+        #    pool.map(mp_func, inputs)
+
         # convert sets to list
         valid_tracks = [list(tracklet) for tracklet in valid_tracks]
         return valid_tracks
+
+
+# def mp_func(valid_tracks, i, preds, window_length, thresh, cost_over_window_f):
+#    for box in preds:
+#        cost, min_boxes = cost_over_window_f(
+#            preds, i, box, window_length
+#        )
+#        if cost <= thresh:
+#            valid_tracks[i].add(box)
+#            # convert to dict(frame_idx: box)
+#            for frame_idx, value in min_boxes.items():
+#                valid_tracks[frame_idx].add(value)
+#
+#    return None
