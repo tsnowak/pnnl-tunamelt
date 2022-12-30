@@ -1,4 +1,4 @@
-import os
+import os, sys
 import json
 import time
 from datetime import datetime
@@ -100,3 +100,4 @@ def run(
         runtime = float(end_time - start_time) / label["video_length"]
         with open(f"{REPO_PATH}/experiments/runtime.txt", "a") as f_runtime:
             f_runtime.write(str(runtime) + "\n")
+            

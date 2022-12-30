@@ -632,6 +632,7 @@ class TrackletAssociation:
         # TODO: just cast for i in frame_idxs to MP pool? - maybe not worth time to dev?
         # TODO: would need to perform cost_over_window, return (cost, i, min_boxes) in queue, then unify into set?
         # iterate over all frames in video
+        print(valid_tracks)
         for i in frame_idxs:
             for box in preds[i]:
                 cost, min_boxes = self._cost_over_window(
@@ -642,6 +643,7 @@ class TrackletAssociation:
                     # convert to dict(frame_idx: box)
                     for frame_idx, value in min_boxes.items():
                         valid_tracks[frame_idx].add(value)
+        print(valid_tracks)
 
         # manager = Manager()
         # mp_window_length = manager.Value('i', self.window_length)
