@@ -9,16 +9,16 @@ from turbx.vis import viz_video_results
 
 if __name__ == "__main__":
 
-    file_path = f"{REPO_PATH}/data/mp4/batched_test"
-    labels = f"{REPO_PATH}/data/labels/cvat-video-1.1/batched_test"
+    file_path = f"{REPO_PATH}/data/mp4/train"
+    labels = f"{REPO_PATH}/data/labels/cvat-video-1.1/train"
 
-    dataloader = DataLoader(Dataset(videos=file_path, labels=labels), split="test")
+    dataloader = DataLoader(Dataset(videos=file_path, labels=labels), split="train")
 
     fps = 10
     frame_delay = 1.0 / fps
 
     # initialize filters
-    params_path = f"{REPO_PATH}/experiments/best_params.json"
+    params_path = f"{REPO_PATH}/experiments/88.json"
     with open(params_path, "r") as f:
         params = json.load(f)
 
@@ -52,7 +52,7 @@ if __name__ == "__main__":
 
     # Smallest Target/Hardest to Detect: 20,19
     # Most Noise (least % frames removed): 13
-    video, label = dataloader.get_vid_id(390001)  # index dataloader by video_id
+    video, label = dataloader.get_vid_id(20)  # index dataloader by video_id
     # video, label = dataloader[14]             # get idx from dataloader iterator
     log.info(f"Using video {label['video_id']}...")
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         fps,
         params=params,
         show=True,
-        save=False,
+        save=True,
         out_path=Path(),
         video_type=".mp4",
     )
