@@ -1,4 +1,5 @@
 from typing import List, Dict
+import numpy as np
 
 
 def safe_division(n, d, value=0.0):
@@ -11,9 +12,24 @@ def boxes_to_binary(pred: List):
 
 def calc_box_area(box: List[List]):
     """
-    Calculate the area of a xyxy bbox
+    Calculate the area of a [[xy][xy]] bbox
     """
-    return (box[1][0] - box[0][0]) * (box[1][1] - box[1][0])
+    return (box[1][0] - box[0][0]) * (box[1][1] - box[0][1])
+
+
+def avg_box_area(box_list: List[List]):
+    """
+    Calculate the area of a list of [xyxy] bboxes
+    """
+    box_areas = []
+    for box in box_list:
+        box_area = calc_box_area(box)
+        box_areas.append(box_area)
+
+    if len(box_areas) == 0:
+        return np.nan
+    else:
+        return np.mean(box_areas)
 
 
 def roc(label: List, pred: List):
