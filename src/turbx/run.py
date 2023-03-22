@@ -90,14 +90,14 @@ def run(
             video_type=".mp4",
         )
 
+        # save run time estimates
+        end_time = time.time_ns()
+        runtime = float(end_time - start_time) / label["video_length"]
+        with open(f"{REPO_PATH}/experiments/runtime/{dataloader.split}/{params}/{label['video_id']}/runtime.txt", "a") as f_runtime:
+            f_runtime.write(str(runtime) + "\n")
+
         write_results(params, label, pred, out_path=vid_path)
 
         # update counter
         vid_itr += 1
-
-        # save run time estimates
-        end_time = time.time_ns()
-        runtime = float(end_time - start_time) / label["video_length"]
-        with open(f"{REPO_PATH}/experiments/runtime.txt", "a") as f_runtime:
-            f_runtime.write(str(runtime) + "\n")
             

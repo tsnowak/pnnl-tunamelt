@@ -7,7 +7,12 @@ notebooks/data
 *.swp
 *.DS_Store
 *.profraw
+
+# media
 *.gif
+*.mp4
+*.svg
+*.png
 
 # poetry
 *.lock

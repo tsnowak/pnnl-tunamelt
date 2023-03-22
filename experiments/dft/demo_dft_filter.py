@@ -7,6 +7,9 @@ from turbx.data import DataLoader, Dataset, numpy_to_cv2
 from turbx.filter import common, dft
 from turbx.vis import viz_video_results
 
+import imageio.v3 as iio
+import numpy as np
+
 if __name__ == "__main__":
 
     file_path = f"{REPO_PATH}/data/mp4/train"
@@ -39,10 +42,10 @@ if __name__ == "__main__":
     filters = OrderedDict(
         [
             ("original", None),
-            ("turbine_filter", turbine_filter),
             ("mean_filter", mean_filter),
-            ("intensity_filter", intensity_filter),
+            ("turbine_filter", turbine_filter),
             ("denoise_filter", denoise_filter),
+            ("intensity_filter", intensity_filter),
             ("contour_filter", contour_filter),
             ("tracklet_association", tracklet_association),
         ]
@@ -52,8 +55,8 @@ if __name__ == "__main__":
 
     # Smallest Target/Hardest to Detect: 20,19
     # Most Noise (least % frames removed): 13
-    video, label = dataloader.get_vid_id(20)  # index dataloader by video_id
-    # video, label = dataloader[14]             # get idx from dataloader iterator
+    # video, label = dataloader.get_vid_id(13)  # index dataloader by video_id
+    video, label = dataloader[0]  # get idx from dataloader iterator
     log.info(f"Using video {label['video_id']}...")
 
     # run data through the filters in order
@@ -76,27 +79,75 @@ if __name__ == "__main__":
         if name == "original":
             display[name] = numpy_to_cv2(video, "HSV", "BGR")
         elif filters[name].__class__.__name__ == "ContourFilter":
-            # pred = output
-            continue
+            contour_pred = output
         elif filters[name].__class__.__name__ == "TrackletAssociation":
-            pred = output
-            # continue
+            assoc_pred = output
         else:
             display[name] = numpy_to_cv2(output, filters_list[idx][1].out_format, "BGR")
         idx += 1
 
-    print(mean_filter.mask.shape)
+    print("writing hsv and masks")
+    print(video[..., 2].shape)
+    iio.imwrite("hsv.mp4", video[..., 2], format_hint=".mp4", fps=10)
+    print(mean_filter.mask.dtype)
+    iio.imwrite(
+        "mean_filter_mask.mp4",
+        mean_filter.mask.astype(np.uint8) * 255.0,
+        format_hint=".mp4",
+        fps=10,
+    )
+    print(turbine_filter.mask.shape)
+    print(turbine_filter.mask.dtype)
+    iio.imwrite(
+        "turbine_filter_mask.png",
+        turbine_filter.mask.astype(np.uint8) * 255,
+        format_hint=".png",
+    )
+    print(intensity_filter.mask.dtype)
+    iio.imwrite(
+        "intensity_filter_mask.mp4",
+        intensity_filter.mask.astype(np.uint8) * 255.0,
+        format_hint=".mp4",
+        fps=10,
+    )
+    print("done")
 
     # view and save videos with results + save results
+    log.info("Visualizing contour filter outputs...")
+    viz_video_results(
+        display,
+        label,
+        contour_pred,
+        fps,
+        params=params,
+        show=False,
+        save=False,
+        out_path=Path("contour_det"),
+        video_type=".mp4",
+    )
+
+    log.info("Visualizing association filter outputs...")
+    viz_video_results(
+        display,
+        label,
+        assoc_pred,
+        fps,
+        params=params,
+        show=False,
+        save=False,
+        out_path=Path("association_det"),
+        video_type=".mp4",
+    )
+
     log.info("Visualizing filter outputs...")
     viz_video_results(
         display,
         label,
-        pred,
+        None,
         fps,
         params=params,
-        show=True,
-        save=True,
-        out_path=Path(),
+        show=False,
+        save=False,
+        out_path=Path("no_preds"),
         video_type=".mp4",
     )
