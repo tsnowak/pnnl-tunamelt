@@ -96,13 +96,13 @@ cli.py dump --format "CVAT for images 1.1" 103 output.zip
 
 # Downloading the Dataset
 
-The data set is hosted on pcloud. A [web interface link](http://u.pc.cd/k76italK) is provided, but to need to create a direct download link if we want to download the data set via terminal.
+The data set is hosted on pcloud. A [web interface link](https://u.pcloud.link/publink/show?code=k76italK) is provided, but we need to create a direct download link if we want to download the data set via terminal.
 
-We will use pcloud's web API to generate a direct download link. To do so, we take the code parameter in web interface link, and pass it into the pcloud web API as shown below. **Note, this link will always remain the same!**
+We will use pcloud's web API to generate a direct download link. To do so, we will take the `code` parameter in web interface link, and pass it into the pcloud web API as shown below. **Note, this link will always remain the same, so feel free to copy and paste!**
 ```
 https://api.pcloud.com/getpublinkdownload?code=k76italK&forcedownload=0
 ```
-This will return a page like the below. **This will change for each request**, as the direct download link always expires in one day:
+This will return a page like the below. **This will change for each request, as the direct download link always expires in one day:**
 ```
 {
 	"result": 0,
@@ -115,7 +115,7 @@ This will return a page like the below. **This will change for each request**, a
 	]
 }
 ```
-We can then choose a host to download from - in this case either `p-def4.pcloud.com` or `c383.pcloud.com` - and append the `path` with backslashes removed - `/cBZnt4E1dZHhHGlcZZZj05Mo7Zg5ZZGiFZkZnR6fMJZR4ZszZ7zZPHZuHZSpZ3HZVFZlpZY5ZbLZ04ZTRZC4Ztd8tVZhaYWhc86DPXLdkfDV0Q8PQaGYeqk/AFD-ME.tar.gz` - to the AFD-ME file to create the direct download link. The URL for this generated (and likely now expired) direct download path is given below.
+We can then choose a host to download from - in this case either `p-def4.pcloud.com` or `c383.pcloud.com` - and append the `path` with backslashes removed - `/cBZnt4E1dZHhHGlcZZZj05Mo7Zg5ZZGiFZkZnR6fMJZR4ZszZ7zZPHZuHZSpZ3HZVFZlpZY5ZbLZ04ZTRZC4Ztd8tVZhaYWhc86DPXLdkfDV0Q8PQaGYeqk/AFD-ME.tar.gz` - to create the direct download link. The URL for this generated (and likely now expired) direct download path is given below. This can then be used with `wget` to download the data set in a terminal session.
 ```
 https://p-def4.pcloud.com/cBZnt4E1dZHhHGlcZZZMG0Mo7Zg5ZZGiFZkZnR6fMJZR4ZszZ7zZPHZuHZSpZ3HZVFZlpZY5ZbLZ04ZTRZC4Ztd8tVZ6wcSuxqImyBvBT1so6vuBLEV23UX/AFD-ME.tar.gz
 ```
