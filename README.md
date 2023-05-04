@@ -1,7 +1,7 @@
 
 # Acoustic Fish Detection - Marine Energy
 
-This code accompanies the paper `On the automated detection of targets in acoustic camera video around an experimental tidal turbine: a labeled data set of targets and automated detection approach` which proposes a novel, labeled data set and automated detection pipeline for detecting fish around operating tidal turbines.
+This code accompanies the paper `On the automated detection of targets in acoustic camera video around an experimental tidal  turbine: a labeled target detection data set  and automated detection approach` which proposes a novel, labeled data set and automated detection pipeline for detecting fish around operating tidal turbines.
 
 Instructions for downloading the data set and setting up the development environment used in this work are described below.
 
