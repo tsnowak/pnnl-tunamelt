@@ -1,21 +1,23 @@
 
 # Acoustic Fish Detection - Marine Energy
 
-This code accompanies the paper `On the automated detection of targets in acoustic camera video around an experimental tidal  turbine: a labeled target detection data set  and automated detection approach` which proposes a novel, labeled data set and automated detection pipeline for detecting fish around operating tidal turbines.
+This code accompanies the paper `Towards automating the detection of targets in acoustic camera video around tidal turbines` which proposes a novel, labeled data set and automated detection pipeline for detecting fish around operating tidal turbines.
 
 Instructions for downloading the data set and setting up the development environment used in this work are described below.
 
 # Getting Started
 
-## Downloading the Data Set
+## Downloading the data set
 
-The AFD-ME data set proposed in this work is hosted on pcloud. A [web interface link](https://u.pcloud.link/publink/show?code=k76italK) is provided, but we need to create a direct download link if we want to download the data set via terminal.
+The AFD-ME data set proposed in this work is hosted on pcloud. A [web interface link](https://u.pcloud.link/publink/show?code=k76italK) is provided. For those who want a direct download link in order to download the data in a headless environment (such as a terminal session), a few steps must be taken.
 
-We will use pcloud's web API to generate a direct download link. To do so, we will take the `code` parameter in web interface link, and pass it into the pcloud web API as shown below. **Note, this link will always remain the same, so feel free to copy and paste!**
+## Creating a direct download link with pcloud
+
+We will first use pcloud's web API to generate a direct download link. To do so, we will take the `code` parameter in web interface link, and pass it into the pcloud web API as shown below. **This link will always remain the same and can be copy/pasted.**
 ```
 https://api.pcloud.com/getpublinkdownload?code=k76italK&forcedownload=0
 ```
-This will return a page like the below. **This will change for each request, as the direct download link always expires in one day:**
+This will return a page like the below. **This return will change for each request, as the direct download link always expires in one day!**
 ```
 {
 	"result": 0,
@@ -28,18 +30,18 @@ This will return a page like the below. **This will change for each request, as 
 	]
 }
 ```
-We can then choose a host to download from - in this case either `p-def4.pcloud.com` or `c383.pcloud.com` - and append the `path` with backslashes removed - `/cBZnt4E1dZHhHGlcZZZj05Mo7Zg5ZZGiFZkZnR6fMJZR4ZszZ7zZPHZuHZSpZ3HZVFZlpZY5ZbLZ04ZTRZC4Ztd8tVZhaYWhc86DPXLdkfDV0Q8PQaGYeqk/AFD-ME.tar.gz` - to create the direct download link. The URL for this generated (and likely now expired) direct download path is given below. This can then be used with `wget` to download the data set in a terminal session.
+We can then choose a host to download from either `p-def4.pcloud.com` or `c383.pcloud.com` and append the `path` with backslashes removed - `/cBZnt4E1dZHhHGlcZZZj05Mo7Zg5ZZGiFZkZnR6fMJZR4ZszZ7zZPHZuHZSpZ3HZVFZlpZY5ZbLZ04ZTRZC4Ztd8tVZhaYWhc86DPXLdkfDV0Q8PQaGYeqk/AFD-ME.tar.gz` - to create the direct download link. The URL for this generated (and likely now expired) direct download path is given below. This can then be used with `wget` to download the data set in a terminal session.
 ```
 https://p-def4.pcloud.com/cBZnt4E1dZHhHGlcZZZMG0Mo7Zg5ZZGiFZkZnR6fMJZR4ZszZ7zZPHZuHZSpZ3HZVFZlpZY5ZbLZ04ZTRZC4Ztd8tVZ6wcSuxqImyBvBT1so6vuBLEV23UX/AFD-ME.tar.gz
 ```
 
-## Downloading conda
+## Downloading conda/miniconda
 
 All package dependencies for this code base are handled by `conda` and `pip`. To use this repository, these managers will need to be installed:
 
-- [Miniconda](https://docs.conda.io/en/latest/miniconda.html): Miniconda setup script downloads. Will also contain pip/PyPi.
+- [Miniconda](https://docs.conda.io/en/latest/miniconda.html): Setting up the miniconda environment as shown below will also contain a clean, separate pip environment.
 
-## Conda environment setup
+## Setting up the conda environment
 
 Once `conda` is setup on your machine, you can go ahead and setup the environment.
 
@@ -50,11 +52,11 @@ conda create -n turbx python=3.9
 # activates the new environment
 conda activate turbx
 
-# installs the software for this project into the environment
+# installs the dependencies for this project into the environment
 conda env update --file env.yml
 ```
 
-## Data directories symlink
+## Creating symlinks for the data directories
 
 The code as its written relies on a certain directory structure: 
 
@@ -70,9 +72,7 @@ ls $REPO_PATH/data
 ```
 Currently `cvat-video-1.1` is the only format of labels supported
 
-# Data Set
-
-## Data Label Structure
+## Data set label structure
 
 During data set creation video labels are converted from `xml` files into python objects. Below is the structure of the python objects returned by the data loader:
 
@@ -103,7 +103,7 @@ During data set creation video labels are converted from `xml` files into python
 } 
 ```
 
-# CVAT
+# About the Computer Vision Annotation Tool (CVAT)
 
 CVAT is an open-source image and video labeling tool that can be downloaded and stood up. We used CVAT's docker image to create a video labeling platform for our expert-annotators to identify targets of interest in video.
 
