@@ -11,6 +11,7 @@ reqs = [
     "scipy",
     "matplotlib",
     "imageio",
+    "imageio[ffmpeg]",
     "pyyaml",
     "xmltodict",
     "jupyter",
