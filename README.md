@@ -28,23 +28,27 @@ python scripts/download_dataset.py
 
 Executables used to run our method and visualize results are at `scripts/` and `scripts/experiments`. Analysis of experimental results were often done inside jupyters notebooks which are located at `notebooks/`. Some examples of these scripts are:
 
+Visualize AFD-ME on a single video
+
 ```bash
-# visualize AFD-ME on a single video
 python scripts/experiments/demo_inference.py --params scripts/experiments/params/20.json --show True --id 18
 ```
 
+Rerun AFD-ME on the entire dataset
+
 ```bash
-# rerun AFD-ME on the entire dataset
 python scripts/experiments/multirun.py --params scripts/experiments/params/20.json
 ```
 
+Rerun the hyperparameter search in AFD-ME
+
 ```bash
-# rerun the hyperparameter search in AFD-ME
 python scripts/experiments/multirun.py --params scripts/experiments/params/hparam_search.json
 ```
 
+Rerun the ablation study in AFD-ME
+
 ```bash
-# rerun the ablation study in AFD-ME
 python scripts/experiments/ablation_tracklet.py
 ```
 
