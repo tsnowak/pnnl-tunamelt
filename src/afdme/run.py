@@ -71,10 +71,6 @@ def run(
 
         # view and save videos with results + save results
         log.info("Visualizing filter outputs...")
-        # itr_results = viz_metrics_results(
-        #    label, pred, params, show=False, save=True, out_path=Path()
-        # )
-        # TODO
         viz_video_results(
             display,
             label,

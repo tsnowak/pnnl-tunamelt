@@ -7,34 +7,12 @@ from afdme import REPO_PATH, log
 from afdme.filter import common, dft
 from afdme.run import run
 from afdme.data import DataLoader, Dataset
-from afdme.utils import create_exp_dirs, load_params, generate_param_batches
-
-
-def create_paths(args):
-    """
-    Save meta data; prep for run batches
-    """
-
-    # parse params arg
-    assert (args["params"] is not None) and (
-        len(args["params"])
-    ) > 0, "Path to one or more params json files must be passed to the params argument"
-
-    # create output folder structure
-    run_path = create_exp_dirs(args["results_path"])
-    params_list = load_params(run_path, args["params"])
-
-    # save flag arguments to run path
-    args_json = json.dumps(args, indent=4)
-    with open(f"{run_path}/args.json", "w") as outfile:
-        outfile.write(args_json)
-
-    # create run batches
-    param_batches = []
-    for params in params_list:
-        param_batches += generate_param_batches(params)
-
-    return run_path, param_batches
+from afdme.utils import (
+    create_exp_dirs,
+    load_params,
+    generate_param_batches,
+    create_paths,
+)
 
 
 def multirun(args):
@@ -115,6 +93,7 @@ if __name__ == "__main__":
         "--params",
         help="Params files to run on relative to the base repo directory",
         nargs="*",
+        required=True,
     )
     parser.add_argument(
         "--data_path",

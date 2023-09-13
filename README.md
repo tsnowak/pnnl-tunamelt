@@ -30,12 +30,12 @@ Executables used to run our method and visualize results are at `scripts/` and `
 
 ```bash
 # visualize AFD-ME
-python /scripts/TODO/inference...
+python scripts/experiments/demo_inference.py
 ```
 
 ```bash
 # rerun AFD-ME on the entire dataset
-python /scripts/experiments/multirun.py
+python scripts/experiments/multirun.py
 ```
 
 # More Information

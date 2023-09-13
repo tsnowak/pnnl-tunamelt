@@ -1,5 +1,8 @@
 from typing import List, Dict
 import numpy as np
+import matplotlib.pyplot as plt
+from pathlib import Path
+from afdme.data import label_to_per_frame_list, label_to_per_frame_targets
 
 
 def safe_division(n, d, value=0.0):
@@ -105,3 +108,67 @@ def tfpnr(label: List, pred: List) -> Dict:
         "fpr": safe_division(float(fp), n),
         "fnr": safe_division(float(fn), p),
     }
+
+
+def calc_size(label: Dict):
+    """
+    Calculate per frame average target size, video min size, video max size, and video average size
+    """
+    min_size, max_size, avg_size = None, None, None
+    per_target_size = []
+    per_frame_avg_size = [[] for _ in range(label["video_length"])]
+    for track in label["tracks"]:
+        for frame in track["frames"]:
+            box_area = calc_box_area(frame["box"])
+            per_frame_avg_size[frame["frame"]].append(box_area)
+            per_target_size.append(box_area)
+    per_frame_avg_size = [sum(x) / len(x) for x in per_frame_avg_size]
+    min_size = min(per_target_size)
+    max_size = max(per_target_size)
+    avg_size = sum(per_target_size) / len(per_target_size)
+    return per_frame_avg_size, min_size, max_size, avg_size
+
+
+def calc_frames_removed(pred: List):
+    binary_preds = boxes_to_binary(pred)
+    pos_dets = [x for x in binary_preds if x == 1]
+    neg_dets = [x for x in binary_preds if x == 0]
+    return binary_preds, len(pos_dets), len(neg_dets)
+
+
+def calc_tfpnr(label: Dict, pred: List, show=False, save=False, out_path=Path()):
+    # only need list of bbox as labels
+    label = label_to_per_frame_list(label)
+
+    # convert to per frame binary target presence labels
+    binary_label = boxes_to_binary(label)
+    binary_pred = boxes_to_binary(pred)
+    # calculare TPR and FPR metrics
+    tfpnr_dict = tfpnr(binary_label, binary_pred)
+
+    if show or save:
+        # plot binary per frame results
+        plt.figure("per_frame")
+        plt.plot(binary_label)
+        plt.plot(binary_pred)
+
+        plt.figure("metrics")
+        keys = ["tpr", "tnr", "fpr", "fnr"]
+        data = [tfpnr_dict[k] for k in keys]
+        plt.bar(keys, data)
+        plt.ylim(bottom=0.0, top=1.0)
+
+    if show:
+        plt.show(block=False)
+    if save:
+        plt.savefig(out_path)
+
+    return binary_label, binary_pred, tfpnr_dict
+
+
+def calc_tdr(label: Dict, pred: List):
+    # convert to per frame binary target presence labels
+    targets = label_to_per_frame_targets(label)
+    binary_pred = boxes_to_binary(pred)
+    # calculare TPR and FPR metrics
+    return target_detection_rate(targets, binary_pred)

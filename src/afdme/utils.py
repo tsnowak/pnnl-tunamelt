@@ -29,6 +29,8 @@ def create_exp_dirs(results_path) -> Path:
 
 def load_params(run_path, params) -> List:
     params_list = []
+    if isinstance(params, str):
+        params = [params]
     for i, params_path in enumerate(params):
         params_path = f"{REPO_PATH}/{params_path}"
         # load and copy jsons to run path for reference
@@ -167,3 +169,30 @@ def standard_parser():
     assert args.file_name is not None
 
     return args
+
+
+def create_paths(args):
+    """
+    Save meta data; prep for run batches
+    """
+
+    # parse params arg
+    assert (args["params"] is not None) and (
+        len(args["params"])
+    ) > 0, "Path to one or more params json files must be passed to the params argument"
+
+    # create output folder structure
+    run_path = create_exp_dirs(args["results_path"])
+    params_list = load_params(run_path, args["params"])
+
+    # save flag arguments to run path
+    args_json = json.dumps(args, indent=4)
+    with open(f"{run_path}/args.json", "w") as outfile:
+        outfile.write(args_json)
+
+    # create run batches
+    param_batches = []
+    for params in params_list:
+        param_batches += generate_param_batches(params)
+
+    return run_path, param_batches

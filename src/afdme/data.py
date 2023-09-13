@@ -59,7 +59,6 @@ class Dataset:
             # create default split name of "None"
             return {"None": list(zip(self.videos, [None] * len(self.videos)))}
         dataset = {}
-        # TODO: inefficiently implemented...
         for split, data in self.labels.items():
             for label in data:
                 # find label file path in labeled videos
@@ -337,54 +336,47 @@ def cap_to_nparray(cap, video_format="BGR"):
     return np.asarray(buf)
 
 
-## UNTESTED ##
+# - frame - start_frame not in bounds for last frame
+def label_to_per_frame_list(label: Dict):
+    """
+    Returns a list of bounding boxes per frame
+    """
+    # support split videos while back support full videos
+    try:
+        start_frame = label["start_frame"]
+    except KeyError:
+        start_frame = 0
+
+    # boxes = e.g. [0, 300], e.g. [300, 600] -> boxes[600] out of range
+    boxes = [[] for _ in range(start_frame, start_frame + label["video_length"])]
+    for track in label["tracks"]:
+        for frame in track["frames"]:
+            boxes[frame["frame"] - start_frame].append(frame["box"])
+
+    return boxes
 
 
-def prep_exp_data(data_dir, file_name, rel_out_dir):
-    if Path(data_dir + "/" + file_name).is_file():
-        file_name = file_name
-        data_dir = data_dir
-    elif Path(data_dir + "/" + file_name + ".mp4").is_file():
-        file_name = file_name + ".mp4"
-        data_dir = data_dir
-    elif Path(file_name).is_file():
-        data_dir = str(Path(file_name).parent)
-        file_name = str(Path(file_name).name)
-    else:
-        raise ValueError(
-            f"Invalid data_dir or file_name provided.\ndata_dir: {data_dir}\nfile_name: {file_name}"
-        )
+def label_to_per_frame_targets(label: Dict) -> List:
+    """
+    Returns a list of target_ids per frame
+    """
+    # support split videos while back support full videos
+    try:
+        start_frame = label["start_frame"]
+    except KeyError:
+        start_frame = 0
 
-    log.info(f"Found file at: {data_dir}/{file_name}")
-    vid_path = get_file_path(file_name, [data_dir], absolute=True)
+    targets = [[] for _ in range(start_frame, start_frame + label["video_length"])]
+    for track in label["tracks"]:
+        for frame in track["frames"]:
+            targets[frame["frame"] - start_frame].append(track["track_id"])
 
-    # define place to save outputs
-    image_path = Path(REPO_PATH + rel_out_dir)
-    Path(image_path).mkdir(parents=True, exist_ok=True)
-
-    return vid_path, image_path
+    return targets
 
 
-def get_file_path(
-    f: str, data_paths: list, return_first: bool = True, absolute: bool = False
-) -> str:
-    def d_func(x):
-        if absolute:
-            return Path(x).absolute()
-        else:
-            return Path(x)
+def xywh_to_xyxy(box):
+    return ((box[0], box[1]), (box[0] + box[2], box[1] + box[3]))
 
-    data_paths = [d_func(d) if isinstance(d, str) else exit(1) for d in data_paths]
-    f_paths = []
-    for d in data_paths:
-        f_paths += d.glob("**/*")
 
-    out = []
-    for f_path in f_paths:
-        if f_path.name == f:
-            if return_first:
-                return f_path
-            else:
-                out.append(f_path)
-
-    return out
+def xyxy_to_xywh(box):
+    return (box[0][0], box[0][1], box[0][0] - box[1][0], box[0][1] - box[1][1])

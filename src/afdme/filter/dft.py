@@ -16,13 +16,13 @@ class DFTFilter(OfflineFilter):
     periodicity within the video
 
     Args:
-        video (np.array): [N, H, W, C] Video to process
+        video (np.ndarray): [N, H, W, C] Video to process
         fps (int): Frames per seconds of the video
         freq_range (Optional[Tuple], optional): Range of frequencies to detect. Defaults to (1.5, 3.0).
         thresh_func (Callable, optional): Function used to determine whether frequency component is sufficiently high. Defaults to None.
 
     Returns:
-        np.array: [H, W, C] Binary mask with pixels exhibiting frequencies in freq_range = 1
+        np.ndarray: [H, W, C] Binary mask with pixels exhibiting frequencies in freq_range = 1
     """
 
     def __init__(
@@ -32,7 +32,6 @@ class DFTFilter(OfflineFilter):
         thresh_func: Optional[str] = "max",
         params: Optional[Dict] = {"freq_range": (1.5, 3.0), "mask_smoothing": 9},
     ):
-
         # range of frequences to filter
         self.freq_range = params["freq_range"]
 
@@ -90,7 +89,6 @@ class DFTFilter(OfflineFilter):
         video: np.ndarray,
         fps: int,
     ) -> np.ndarray:
-
         # take the fft of the video
         video_fft = fft(video, axis=0, workers=-1)
         video_fft = fftshift(video_fft, axes=0)  # 0 freq at center
@@ -116,21 +114,21 @@ class DFTFilter(OfflineFilter):
         assert (
             self.mask.shape[:2] == video.shape[1:3]
         ), f"Mask shape differs from video shape \
-                \nMask: {mask.shape[:2]} \
+                \nMask: {self.mask.shape[:2]} \
                 \nVideo: {video.shape[1:2]}"
 
         assert (
             self.mask.dtype == np.bool_
         ), f"Mask dtype is not bool\
-                \n{mask.dtype}"
+                \n{self.mask.dtype}"
 
         return self.mask
 
     def _mean_threshold(
         self,
-        fft_video: np.array,
-        freq: np.array,
-        fft_mag: np.array,
+        fft_video: np.ndarray,
+        freq: np.ndarray,
+        fft_mag: np.ndarray,
         freq_range: Tuple,
         factor: Optional[float] = 1.25,
     ):
@@ -156,7 +154,11 @@ class DFTFilter(OfflineFilter):
         return mask
 
     def _max_threshold(
-        self, fft_video: np.array, freq: np.array, fft_mag: np.array, freq_range: Tuple
+        self,
+        fft_video: np.ndarray,
+        freq: np.ndarray,
+        fft_mag: np.ndarray,
+        freq_range: Tuple,
     ):
         """
         Threshold pixels if within the frequency range lies the maximum
@@ -177,12 +179,12 @@ class DFTFilter(OfflineFilter):
 
         return mask
 
-    def _get_in_range(self, fft_video: np.array, freq: np.array, freq_range: Tuple):
+    def _get_in_range(self, fft_video: np.ndarray, freq: np.ndarray, freq_range: Tuple):
         """Returns frequencies from FFT that are within the given frequency range
 
         Args:
-            fft_video (np.array): fft of the original video
-            freq (np.array): frequency bins of the fft
+            fft_video (np.ndarray): fft of the original video
+            freq (np.ndarray): frequency bins of the fft
             freq_range (Tuple): range of frequencies to keep
 
         Returns:
