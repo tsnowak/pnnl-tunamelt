@@ -19,8 +19,9 @@ pip install .
 
 ### Download the data set
 
+Download and unpack the dataset into `{REPO_PATH}/data`
+
 ```bash
-# download and unpack the dataset into {REPO_PATH}/data
 python scripts/download_dataset.py
 ```
 
