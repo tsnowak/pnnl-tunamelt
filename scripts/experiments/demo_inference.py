@@ -9,11 +9,12 @@ import numpy as np
 
 from afdme import REPO_PATH, log
 from afdme.data import DataLoader, Dataset, numpy_to_cv2
+from afdme.run import create_dataloader, create_pipeline, create_paths, run_pipeline
 from afdme.filter import common, dft
-from afdme.utils import create_paths
 from afdme.vis import viz_video_results
 
-if __name__ == "__main__":
+
+def create_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-d", "--dataset", help="dataset to use: [train, test]", default="train"
@@ -59,95 +60,39 @@ if __name__ == "__main__":
         help="ID of the video to run on. See labels .xml for video ids.",
         required=True,
     )
+    return parser
+
+
+if __name__ == "__main__":
+    parser = create_parser()
     args = vars(parser.parse_args())
     run_path, param_batches = create_paths(args)
 
-    if args["dataset"] == "test":
-        data_path = f"{args['data_path']}/mp4/batched_test"
-        label_path = f"{args['data_path']}/labels/cvat-video-1.1/batched_test"
-    else:
-        data_path = f"{args['data_path']}/mp4/{args['dataset']}"
-        label_path = f"{args['data_path']}/labels/cvat-video-1.1/{args['dataset']}"
-    dataloader = DataLoader(
-        Dataset(videos=data_path, labels=label_path), split=args["dataset"]
-    )
-
     fps = 10
     frame_delay = 1.0 / fps
+
+    # compose the dataloader
+    dataloader = create_dataloader(args)
 
     # initialize filters
     params_path = f"{REPO_PATH}/{args['params']}"
     with open(params_path, "r") as f:
         params = json.load(f)
 
-    mean_filter = common.MeanFilter(fps=fps, params=params["mean_filter"])
-    turbine_filter = dft.DFTFilter(fps=fps, params=params["turbine_filter"])
-    denoise_filter = common.GaussianBlurDenoiseFilter(
-        fps=fps, params=params["denoise_filter"]
-    )
-    intensity_filter = common.IntensityFilter(
-        fps=fps, params=params["intensity_filter"]
-    )
-    contour_filter = common.ContourFilter(params=params["contour_filter"])
-    tracklet_association = common.TrackletAssociation(
-        params=params["tracklet_association"]
-    )
-
-    # define filter order
-    # reinitialize filters given params
-    mean_filter = common.MeanFilter(fps=fps, params=params["mean_filter"])
-    turbine_filter = dft.DFTFilter(fps=fps, params=params["turbine_filter"])
-    denoise_filter = common.GaussianBlurDenoiseFilter(
-        fps=fps, params=params["denoise_filter"]
-    )
-    intensity_filter = common.IntensityFilter(
-        fps=fps, params=params["intensity_filter"]
-    )
-    contour_filter = common.ContourFilter(params=params["contour_filter"])
-    tracklet_association = common.TrackletAssociation(
-        params=params["tracklet_association"]
-    )
-
-    # automatically load filters at runtime and ensure required filters are present
-    # ie {"original": None} and {"contour_filter": contour_filter}
-    filters = OrderedDict()
-    filters.update({"original": None})
-    for filter in args["filters"]:
-        try:
-            filters.update({filter: eval(filter)})
-        except SyntaxError:
-            raise SyntaxError(
-                "The only valid filters to pass to --filters are: "
-                + "[mean_filter, turbine_filter, "
-                + "denoise_filter, intensity_filter, "
-                + "tracklet_association"
-            )
-    # always end with contour_filter
-    filters.update({"contour_filter": contour_filter})
-    # unless tracklet_association present
-    if "tracklet_association" in filters.keys():
-        filters.move_to_end("tracklet_association")
+    # create the filter pipeline  and load the params file
+    filters = create_pipeline(args, params, fps=fps)
 
     # get video, label
 
     # Smallest Target/Hardest to Detect: 20,19
     # Most Noise (least % frames removed): 13
-    video, label = dataloader.get_vid_id(
-        int(args["id"])
-    )  # index dataloader by video_id
+    # index dataloader by video_id
+    video, label = dataloader.get_vid_id(int(args["id"]))
     # video, label = dataloader[0]  # get idx from dataloader iterator
     log.info(f"Running on video {label['video_id']}...")
 
-    # run data through the filters in order
-    log.info("Calculating filters...")
-    outputs = OrderedDict()
-    for idx, (filter_name, filter) in enumerate(filters.items()):
-        log.info(f"\tCalculating {filter_name}...")
-        if filter_name == "original":
-            outputs["original"] = video[..., 2]
-        else:
-            tmp = list(outputs.items())[-1]
-            outputs[filter_name] = filter.filter(tmp[1])
+    # run the pipeline on the given video
+    outputs = run_pipeline(filters, video)
 
     # get filter outputs in order
     display = OrderedDict()
@@ -169,18 +114,18 @@ if __name__ == "__main__":
     iio.imwrite(f"{run_path}/hsv.mp4", video[..., 2], format_hint=".mp4", fps=10)
     iio.imwrite(
         f"{run_path}/mean_filter_mask.mp4",
-        mean_filter.mask.astype(np.uint8) * 255.0,
+        filters["mean_filter"].mask.astype(np.uint8) * 255.0,
         format_hint=".mp4",
         fps=10,
     )
     iio.imwrite(
         f"{run_path}/turbine_filter_mask.png",
-        turbine_filter.mask.astype(np.uint8) * 255,
+        filters["turbine_filter"].mask.astype(np.uint8) * 255,
         format_hint=".png",
     )
     iio.imwrite(
         f"{run_path}/intensity_filter_mask.mp4",
-        intensity_filter.mask.astype(np.uint8) * 255.0,
+        filters["intensity_filter"].mask.astype(np.uint8) * 255.0,
         format_hint=".mp4",
         fps=10,
     )

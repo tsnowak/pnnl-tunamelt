@@ -213,11 +213,13 @@ class IntensityFilter(OfflineFilter):
         # only keep pixels in the video that are within std of their max
         # apply mask in apply
         mask = video > (self.thresh)
-        self.mask = mask
+        print(f"Greater than 0: {np.sum(mask)}")
+        print(f"Greater than 0: {np.sum(video > 0)}")
+        print(f"Equal 1: {np.sum(mask == 1)}")
 
-        log.debug(f"Generated intensity filter mask of shape: {self.mask.shape}")
+        log.debug(f"Generated intensity filter mask of shape: {mask.shape}")
 
-        return self.mask
+        return mask
 
 
 class ContourFilter:
