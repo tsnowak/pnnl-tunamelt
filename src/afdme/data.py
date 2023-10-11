@@ -380,3 +380,9 @@ def xywh_to_xyxy(box):
 
 def xyxy_to_xywh(box):
     return (box[0][0], box[0][1], box[0][0] - box[1][0], box[0][1] - box[1][1])
+
+
+def load_video(filename, data_path=f"{REPO_PATH}/data/AFD-ME/mp4"):
+    video_path = list(Path(data_path).glob(f"**/{filename}"))[0]
+    video = to_numpy(video_path, video_format="BGR")
+    return video
