@@ -11,7 +11,7 @@ from afdme import REPO_PATH, log
 from afdme.data import DataLoader, Dataset, numpy_to_cv2
 from afdme.run import create_dataloader, create_pipeline, create_paths, run_pipeline
 from afdme.filter import common, dft
-from afdme.vis import viz_video_results
+from afdme.vis import viz_video_results, write_results
 
 
 def create_parser():
@@ -109,6 +109,8 @@ if __name__ == "__main__":
         else:
             display[name] = numpy_to_cv2(output, filters_list[idx][1].out_format, "BGR")
         idx += 1
+
+    write_results(params, label, assoc_pred, out_path=run_path)
 
     log.info(f"Writing videos and masks to {run_path}")
     iio.imwrite(f"{run_path}/hsv.mp4", video[..., 2], format_hint=".mp4", fps=10)

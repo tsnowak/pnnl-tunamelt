@@ -6,7 +6,8 @@ from copy import deepcopy
 from datetime import datetime
 from itertools import product
 from pathlib import Path
-from typing import Dict, List, OrderedDict, Tuple, TypeVar
+from typing import Dict, List, OrderedDict, Tuple, TypeVar, Union, Tuple, Set
+from pprint import pprint
 
 import cv2
 import numpy as np
@@ -15,6 +16,42 @@ from afdme import REPO_PATH, log
 
 Shape = TypeVar("Shape")
 DType = TypeVar("DType")
+
+
+def load_multirun_args(multirun_exp_path: Union[str, Path], multirun_args: Dict):
+    runs = OrderedDict()
+    for param in multirun_args["params"]:
+        run_args_name = Path(param).stem
+        run_args_file = list(Path(multirun_exp_path).glob(f"*-{run_args_name}.json"))
+        if not len(run_args_file) == 1:
+            raise ValueError(f"Multiple matching run files found.\n{run_args_file}")
+        run_args_file = run_args_file[0]
+        run_args_id = str(run_args_file.name).split("-")[0]
+        runs[run_args_id] = {
+            "params_file": run_args_file,
+            "params_id": run_args_name,
+            "exp_path": f"{run_args_file.parent}/{run_args_id}",
+        }
+
+    return runs
+
+
+def load_results_json(results_path: Union[str, Path]) -> Tuple[List[Dict], Set[Path]]:
+    if not isinstance(results_path, Path):
+        results_path = Path(results_path)
+    assert results_path.exists()
+
+    inference_results = []
+    param_files = set()
+    for f_name in Path(results_path).glob("**/*.results.json"):
+        param_files.add(f_name)
+        with open(f_name, "r") as f:
+            params = json.load(f)
+            inference_results.append(params)
+    log.info(f"Loaded {len(param_files)} results files:\n")
+    pprint(f"{param_files}")
+
+    return inference_results, param_files
 
 
 def create_exp_dirs(results_path) -> Path:

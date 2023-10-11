@@ -337,7 +337,7 @@ def cap_to_nparray(cap, video_format="BGR"):
 
 
 # - frame - start_frame not in bounds for last frame
-def label_to_per_frame_list(label: Dict):
+def label_to_per_frame_list(label: Dict, key="tracks"):
     """
     Returns a list of bounding boxes per frame
     """
@@ -349,7 +349,7 @@ def label_to_per_frame_list(label: Dict):
 
     # boxes = e.g. [0, 300], e.g. [300, 600] -> boxes[600] out of range
     boxes = [[] for _ in range(start_frame, start_frame + label["video_length"])]
-    for track in label["tracks"]:
+    for track in label[key]:
         for frame in track["frames"]:
             boxes[frame["frame"] - start_frame].append(frame["box"])
 

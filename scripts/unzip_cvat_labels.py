@@ -8,7 +8,7 @@ from afdme import REPO_PATH
 Used to unzip and rename the per-video labels downloaded
 individually from CVAT.
 
-python unzip_all.py -path /full/path/to/data/labels
+python unzip_all.py -path /full/path/to/data/AFD-ME/labels
 """
 
 # path to label files
@@ -17,7 +17,7 @@ parser.add_argument(
     "-path",
     "--path",
     dest="path",
-    default=f"{REPO_PATH}/data/labels",
+    default=f"{REPO_PATH}/data/AFD-ME/labels",
     type=str,
     help="path to files to unzip",
 )

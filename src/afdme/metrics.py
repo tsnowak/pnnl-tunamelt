@@ -2,7 +2,130 @@ from typing import List, Dict
 import numpy as np
 import matplotlib.pyplot as plt
 from pathlib import Path
+from multiprocessing.pool import Pool
 from afdme.data import label_to_per_frame_list, label_to_per_frame_targets
+
+
+def calc_best_of_metrics(ids: List, multirun_metrics: List) -> Dict:
+    amax_ap = np.argmax([x["AP"] for x in multirun_metrics])
+    amax_ar = np.argmax([x["AR"] for x in multirun_metrics])
+    amax_f1 = np.argmax([x["F1"] for x in multirun_metrics])
+    amax_frr = np.argmax([x["frame_removal_rate"] for x in multirun_metrics])
+    amax_tnfrr = np.argmax([x["tn_frame_removal_rate"] for x in multirun_metrics])
+    amax_tdr = np.argmax([x["tdr"] for x in multirun_metrics])
+    amax_frtdr = np.argmax(
+        [(x["tdr"] + x["frame_removal_rate"]) / 2.0 for x in multirun_metrics]
+    )
+    satisfies_criterion = [
+        (x["tdr"] >= 0.9 and x["frame_removal_rate"] >= 0.2) for x in multirun_metrics
+    ]
+
+    best_of_dict = {
+        "AP": {ids[amax_ap]: multirun_metrics[amax_ap]},
+        "AR": {ids[amax_ar]: multirun_metrics[amax_ar]},
+        "F1": {ids[amax_f1]: multirun_metrics[amax_f1]},
+        "FRR": {ids[amax_frr]: multirun_metrics[amax_frr]},
+        "TNFRR": {ids[amax_tnfrr]: multirun_metrics[amax_tnfrr]},
+        "TDR": {ids[amax_tdr]: multirun_metrics[amax_tdr]},
+        "FRTDR": {ids[amax_frtdr]: multirun_metrics[amax_frtdr]},
+        "satisfies_criterion": {
+            id: metrics
+            for id, metrics, sc in zip(ids, multirun_metrics, satisfies_criterion)
+            if sc
+        },
+        "all_runs": {id: metrics for id, metrics in zip(ids, multirun_metrics)},
+    }
+
+    return best_of_dict
+
+
+def calc_multi_video_metrics(results, results_files):
+    mp_pool = Pool()
+    per_video_results = mp_pool.starmap(
+        calc_per_video_metrics, zip(results, results_files)
+    )
+
+    all_video_results = aggregate_metrics(per_video_results)
+
+    return per_video_results, all_video_results
+
+
+def aggregate_metrics(results):
+    outputs = {
+        "all_neg_dets": 0,
+        "all_neg_labels": 0,
+        "all_frames": 0,
+        "tp": 0,
+        "fp": 0,
+        "fn": 0,
+        "tn": 0,
+        "tdrsum": 0,
+    }
+
+    for r in results:
+        outputs["all_neg_dets"] += r["n_neg_dets"]
+        outputs["all_neg_labels"] += r["n_neg_labels"]
+        outputs["all_frames"] += len(r["binary_preds"])
+        outputs["tp"] += r["tfpnr_dict"]["tp"]
+        outputs["fp"] += r["tfpnr_dict"]["fp"]
+        outputs["fn"] += r["tfpnr_dict"]["fn"]
+        outputs["tn"] += r["tfpnr_dict"]["tn"]
+        outputs["tdrsum"] += r["target_detection_rate"]
+
+    outputs["AP"] = safe_division(outputs["tp"], (outputs["tp"] + outputs["fp"]))
+    outputs["AR"] = safe_division(outputs["tp"], (outputs["tp"] + outputs["fn"]))
+    outputs["F1"] = 2 / ((1 / outputs["AR"]) + (1 / outputs["AP"]))
+    outputs["tdr"] = outputs["tdrsum"] / len(results)
+    outputs["frame_removal_rate"] = outputs["all_neg_dets"] / outputs["all_frames"]
+    outputs["tn_frame_rate"] = outputs["all_neg_labels"] / outputs["all_frames"]
+    outputs["tn_frame_removal_rate"] = outputs["tn"] / outputs["all_neg_labels"]
+
+    return outputs
+
+
+def calc_per_video_metrics(result, filename):
+    metric_results = {
+        "results_filename": filename,
+        "video_filename": result["label"]["filename"],
+        "video_id": result["label"]["video_id"],
+        "parameters": result["parameters"],
+    }
+
+    (
+        metric_results["binary_labels"],
+        metric_results["binary_preds"],
+        metric_results["tfpnr_dict"],
+    ) = calc_tfpnr(result["label"], result["prediction"], show=False, save=False)
+    # binary_label, binary_pred, tfpnr_dict = calc_tfpnr(
+    #    result["label"], result["prediction"], show=False, save=False
+    # )
+    (
+        metric_results["unique_targs"],
+        metric_results["detected_targs"],
+        metric_results["target_detection_rate"],
+    ) = calc_tdr(result["label"], result["prediction"])
+    # unique_targs, det_targs, tdr = calc_tdr(
+    #    result["label"], result["prediction"])
+    _, metric_results["n_pos_dets"], metric_results["n_neg_dets"] = calc_frames_removed(
+        result["prediction"]
+    )
+    # _, n_pos_dets, n_neg_dets = calc_frames_removed(result["prediction"])
+    (
+        _,
+        metric_results["n_pos_labels"],
+        metric_results["n_neg_labels"],
+    ) = calc_frames_removed(label_to_per_frame_list(result["label"]))
+    # _, n_pos_lab, n_neg_lab = calc_frames_removed(
+    #    label_to_per_frame_list(result["label"])
+    # )
+    metric_results["perc_frames_removed"] = 100 * (
+        metric_results["n_neg_dets"] / len(metric_results["binary_preds"])
+    )
+    metric_results["perc_neg_frame_removed"] = 100 * (
+        metric_results["n_neg_dets"] / metric_results["n_neg_labels"]
+    )
+
+    return metric_results
 
 
 def safe_division(n, d, value=0.0):
