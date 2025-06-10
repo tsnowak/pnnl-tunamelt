@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools >= 61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tunamelt"
+version = '1.0'
+readme = "README.md"
+license = {file = "LICENSE"}
+requires-python = ">=3.9,<4.0"
+keywords = ["detection", "tracking", "marine energy", "computer vision", "acoustic camera", "imaging sonar"]
+authors = [{name = "Theodore S. Nowak", email = "theodore.nowak@pnnl.gov"}]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "opencv-python",
+    "numpy",
+    "scipy",
+    "matplotlib",
+    "imageio",
+    "imageio[ffmpeg]",
+    "pyyaml",
+    "xmltodict",
+    "jupyter",
+    "requests",
+    "tqdm",
+    "toml"
+]
+
+[project.urls]
+# Use PyPI-standard names here
+# Homepage
+# Documentation
+# Changelog
+# Issue Tracker
+# Source
+# Discord server
+"Homepage" = "https://github.com/tsnowak/pnnl-tunamelt"
+
+[project.optional-dependencies]
+dev = [
+    "pytest"
+]
+
+[tool.setuptools.packages.find]
+where= ["src"]

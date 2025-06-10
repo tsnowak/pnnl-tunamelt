@@ -1,0 +1,23 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+    std:
+        format: '[%(levelname)s] %(asctime)s: %(processName)-10s: %(filename)s - %(message)s'
+        datefmt: '%m/%d/%Y %I:%M:%S%p'
+handlers:
+    default:
+        class: logging.NullHandler
+    std:
+        class: logging.StreamHandler
+        level: DEBUG
+        formatter: std
+        stream: ext://sys.stdout
+loggers:
+    std_logger:
+        level: DEBUG
+        handlers: [std]
+        propagate: yes
+root:
+    level: WARNING
+    handlers: [default]
+    propagate: yes
