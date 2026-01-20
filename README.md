@@ -7,7 +7,24 @@
     <img src="media/2010-09-09_054500_HF_S010-detected.gif" height="400" />
 </p>
 
-This code accompanies the paper `PNNL-TUNAMELT: Towards automating the detection of interactions with marine energy devices using acoustic camera sensors` which proposes a novel, labeled data set and automated detection pipeline for detecting fish in acoustic camera video around operating tidal turbines.
+This code accompanies the paper [PNNL-TUNAMELT: Toward automating the detection of interactions with marine energy devices using acoustic camera sensors](https://aslopubs.onlinelibrary.wiley.com/doi/10.1002/lom3.70024) which proposes a novel, labeled data set and automated detection pipeline for detecting fish in acoustic camera video around operating tidal turbines.
+
+### Citing this Work
+```
+@article{nowak_lom_2025,
+    author = {Nowak, Theodore and Staines, Garrett and Abdullai, Blerim},
+    title = {PNNL-TUNAMELT: Toward automating the detection of interactions with marine energy devices using acoustic camera sensors},
+    journal = {Limnology and Oceanography: Methods},
+    year = {2025},
+    volume = {n/a},
+    number = {n/a},
+    pages = {e70024},
+    doi = {https://doi.org/10.1002/lom3.70024},
+    url = {https://aslopubs.onlinelibrary.wiley.com/doi/abs/10.1002/lom3.70024},
+    eprint = {https://aslopubs.onlinelibrary.wiley.com/doi/pdf/10.1002/lom3.70024},
+    abstract = {Abstract Acoustic cameras, or imaging sonars, are often used to monitor marine energy sites in regions where the water is too dark or turbid for optical sensing. To do so more effectively, scientists are investigating automated detection methodologies to use on these data. However, prior work has found that existing automated detection approaches struggle with the dynamic image background around marine energy devices—such as moving turbine blades. While open-access datasets, methods, and standard evaluation metrics are needed to quickly develop and compare novel automated detection methods, none yet exist for this domain. Using previously collected data, in this work we created a labeled dataset of possible marine life interactions in acoustic camera video around an operating tidal turbine. We call this dataset the Pacific Northwest National Laboratory dataset for Tracking Underwater Nautical Activity around Marine Energy LocaTions or PNNL TUNAMELT dataset. In addition to this dataset, we developed an automated detection pipeline which filters noise from the acoustic camera imagery and then performs object detection to identify possible targets. To analyze our automated detection pipeline, we used a series of common detection and classification metrics. In doing so, we found that our pipeline detected 98\% of targets and removed 70\% of target-less frames in our dataset. These results illustrate our method's potential utility as an aid to a human analyst tasked with extracting targets of interest from the dataset. Finally, we openly release our labeled dataset and all associated code to support and encourage future work in this domain.}
+}
+```
 
 ### :fish: Disclaimer :fish:
 
@@ -210,5 +227,6 @@ Exporting all project annotations in CVAT does not preserve per-video frame info
 # task = 103
 cli.py dump --format "CVAT for images 1.1" 103 output.zip
 ```
+
 
 
