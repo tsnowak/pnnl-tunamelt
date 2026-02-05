@@ -15,7 +15,7 @@ This code accompanies the paper [PNNL-TUNAMELT: Toward automating the detection 
     author = {Nowak, Theodore and Staines, Garrett and Abdullai, Blerim},
     title = {PNNL-TUNAMELT: Toward automating the detection of interactions with marine energy devices using acoustic camera sensors},
     journal = {Limnology and Oceanography: Methods},
-    year = {2025},
+    year = {2026},
     volume = {n/a},
     number = {n/a},
     pages = {e70024},
@@ -227,6 +227,7 @@ Exporting all project annotations in CVAT does not preserve per-video frame info
 # task = 103
 cli.py dump --format "CVAT for images 1.1" 103 output.zip
 ```
+
 
 
 
